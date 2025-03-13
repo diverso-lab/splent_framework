@@ -1,5 +1,5 @@
 .venv
-rosemary.egg-info
+flasky.egg-info
 venv
 
 __pycache__/
