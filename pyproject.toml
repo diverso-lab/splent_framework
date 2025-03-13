@@ -13,7 +13,22 @@ license = { file = "LICENSE" }
 dependencies = [
     "click",
     "python-dotenv",
-    "sqlalchemy"
+    "sqlalchemy",
+    "flask_sqlalchemy",
+    "flask_migrate",
+    "flask_session",
+    "flask_mail",
+    "flask_login",
+    "flask_wtf",
+    "redis",
+    "pymysql",
+    "docker",
+    "psutil",
+    "pytz",
+    "pytest",
+    "pytest-cov",
+    "selenium",
+    "webdriver_manager"
 ]
 
 [tool.setuptools.packages.find]

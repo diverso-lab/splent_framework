@@ -4,6 +4,8 @@ import importlib.util
 from flask import Blueprint
 from dotenv import load_dotenv
 
+from rosemary.utils.path_utils import PathUtils
+
 load_dotenv()
 
 
@@ -11,15 +13,28 @@ class ModuleManager:
     def __init__(self, app):
         self.app = app
         self.base_dir = os.path.abspath(os.path.dirname(__file__))
-        working_dir = os.getenv("WORKING_DIR", "")
-        self.modules_dir = os.path.join(working_dir, "app/modules")
-        self.ignored_modules_file = os.path.join(working_dir, ".moduleignore")
+        self.modules_dir = PathUtils.get_modules_dir()
+
+        self.ignored_modules_file = os.path.join(
+            self.modules_dir, "..", ".moduleignore"
+        )
         self.ignored_modules = self._load_ignored_modules()
+
+    def _find_installed_modules_dir(self):
+        """Intenta encontrar la carpeta 'app/modules' cuando flasky_app está instalado desde PyPI."""
+        package = importlib.util.find_spec("app")
+        if package and package.origin:
+            return os.path.join(os.path.dirname(package.origin), "modules")
+
+        # Si no se encuentra, lanza error
+        raise FileNotFoundError(
+            "No se pudo encontrar 'app/modules'. Verifica la instalación de flasky_app."
+        )
 
     def _load_ignored_modules(self):
         ignored_modules = []
         if os.path.exists(self.ignored_modules_file):
-            with open(self.ignored_modules_file, "r") as f:
+            with open(self.ignored_modules_file) as f:
                 ignored_modules = [line.strip() for line in f.readlines()]
         return ignored_modules
 
@@ -66,7 +81,9 @@ class ModuleManager:
                         self.app.register_module(blueprint)
                 return
             except ModuleNotFoundError as e:
-                print(f"Could not load the module for Blueprint '{module_name}': {e}")
+                print(
+                    f"Could not load the module for Blueprint '{module_name}': {e}"
+                )
 
     def unregister_blueprints(self):
         for name, blueprint in list(self.app.modules.items()):
@@ -80,7 +97,9 @@ class ModuleManager:
     def print_registered_modules(self):
         print("Registered blueprints")
         for name, blueprint in self.app.modules.items():
-            url_prefix = self.app.blueprint_url_prefixes.get(name, "No URL prefix set")
+            url_prefix = self.app.blueprint_url_prefixes.get(
+                name, "No URL prefix set"
+            )
             print(f"Name: {name}, URL prefix: {url_prefix}")
 
     def get_modules(self):
@@ -94,5 +113,7 @@ class ModuleManager:
                 and module_name != ".pytest_cache"
             ):
                 all_modules.append(module_name)
-        loaded_modules = [m for m in all_modules if m not in self.ignored_modules]
+        loaded_modules = [
+            m for m in all_modules if m not in self.ignored_modules
+        ]
         return loaded_modules, self.ignored_modules

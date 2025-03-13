@@ -13,7 +13,9 @@ class LoggingManager:
         )
 
         # Configure the log file with file rotation
-        file_handler = RotatingFileHandler("app.log", maxBytes=10240, backupCount=10)
+        file_handler = RotatingFileHandler(
+            "app.log", maxBytes=10240, backupCount=10
+        )
         file_handler.setLevel(logging.ERROR)
         file_handler.setFormatter(formatter)
 

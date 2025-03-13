@@ -24,7 +24,13 @@ class BaseService:
         return self.repository.delete(id)
 
     def handle_service_response(
-        self, result, errors, success_url_redirect, success_msg, error_template, form
+        self,
+        result,
+        errors,
+        success_url_redirect,
+        success_msg,
+        error_template,
+        form,
     ):
         if result:
             flash(success_msg, "success")
