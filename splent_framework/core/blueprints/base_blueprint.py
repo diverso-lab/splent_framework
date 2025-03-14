@@ -1,7 +1,7 @@
 from flask import Blueprint, Response, abort
 import os
 
-from rosemary.utils.path_utils import PathUtils
+from splent_cli.utils.path_utils import PathUtils
 
 
 class BaseBlueprint(Blueprint):

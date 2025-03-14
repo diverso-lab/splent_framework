@@ -4,7 +4,7 @@ import importlib.util
 from flask import Blueprint
 from dotenv import load_dotenv
 
-from rosemary.utils.path_utils import PathUtils
+from splent_cli.utils.path_utils import PathUtils
 
 load_dotenv()
 
@@ -21,14 +21,14 @@ class ModuleManager:
         self.ignored_modules = self._load_ignored_modules()
 
     def _find_installed_modules_dir(self):
-        """Intenta encontrar la carpeta 'app/modules' cuando flasky_app está instalado desde PyPI."""
-        package = importlib.util.find_spec("app")
+        """Intenta encontrar la carpeta 'app/modules' cuando splent_app está instalado desde PyPI."""
+        package = importlib.util.find_spec("aspp")
         if package and package.origin:
             return os.path.join(os.path.dirname(package.origin), "modules")
 
         # Si no se encuentra, lanza error
         raise FileNotFoundError(
-            "No se pudo encontrar 'app/modules'. Verifica la instalación de flasky_app."
+            "No se pudo encontrar 'app/modules'. Verifica la instalación de splent_app."
         )
 
     def _load_ignored_modules(self):
@@ -56,7 +56,7 @@ class ModuleManager:
             ):
                 try:
                     routes_module = importlib.import_module(
-                        f"app.modules.{module_name}.routes"
+                        f"splent_app.modules.{module_name}.routes"
                     )
                     for item in dir(routes_module):
                         if isinstance(getattr(routes_module, item), Blueprint):
@@ -73,7 +73,7 @@ class ModuleManager:
         if os.path.isdir(module_path) and not module_name.startswith("__"):
             try:
                 routes_module = importlib.import_module(
-                    f"app.modules.{module_name}.routes"
+                    f"splent_app.modules.{module_name}.routes"
                 )
                 for item in dir(routes_module):
                     if isinstance(getattr(routes_module, item), Blueprint):

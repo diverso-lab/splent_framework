@@ -2,7 +2,7 @@ from flask import request
 from flask_restful import Resource
 from datetime import datetime
 
-from app import db
+from splent_app import db
 
 
 def convert_value(value):

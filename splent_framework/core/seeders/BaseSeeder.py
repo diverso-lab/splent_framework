@@ -1,6 +1,6 @@
 from sqlalchemy.exc import IntegrityError
 from datetime import datetime
-from app import db
+from splent_app import db
 
 
 class BaseSeeder:

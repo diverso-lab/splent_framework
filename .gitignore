@@ -1,5 +1,5 @@
 .venv
-flasky.egg-info
+splent_framework.egg-info
 venv
 
 __pycache__/

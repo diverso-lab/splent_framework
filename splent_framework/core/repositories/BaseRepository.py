@@ -1,6 +1,6 @@
 from typing import Generic, List, NoReturn, Optional, TypeVar, Union
 
-import app
+import splent_app
 
 T = TypeVar("T")
 
@@ -8,7 +8,7 @@ T = TypeVar("T")
 class BaseRepository(Generic[T]):
     def __init__(self, model: T):
         self.model = model
-        self.session = app.db.session
+        self.session = splent_app.db.session
 
     def create(self, commit: bool = True, **kwargs) -> T:
         instance: T = self.model(**kwargs)
