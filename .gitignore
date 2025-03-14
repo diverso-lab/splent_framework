@@ -1,7 +1,8 @@
 .venv
-splent_framework.egg-info
+dist/
+build/
+*.egg-info/
 venv
-
 __pycache__/
 *.pyc
 *.pyo
