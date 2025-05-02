@@ -1,13 +1,13 @@
+from splent_cli.utils.dynamic_imports import get_db
 from sqlalchemy.exc import IntegrityError
 from datetime import datetime
-from splent_app import db
 
 
 class BaseSeeder:
     priority = 10  # Default priority
 
     def __init__(self):
-        self.db = db
+        self.db = get_db()
 
     def run(self):
         raise NotImplementedError(
