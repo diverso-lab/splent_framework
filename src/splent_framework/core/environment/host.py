@@ -21,12 +21,12 @@ def get_host_for_testing(test_type: str) -> str:
     host_mapping = {
         "locust": {
             "": "http://localhost:5000",
-            "/app/": "http://nginx_web_server_container",
+            "/workspace/": "http://nginx_web_server_container",
             "/vagrant/": "http://localhost:5000",
         },
         "selenium": {
             "": "http://localhost:5000",
-            "/app/": "http://localhost",
+            "/workspace/": "http://localhost",
             "/vagrant/": "http://localhost:5000",
         },
     }
