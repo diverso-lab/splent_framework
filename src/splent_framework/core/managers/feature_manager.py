@@ -10,46 +10,36 @@ class FeatureManager:
         self.features_file = PathUtils.get_features_file()
 
     def _load_features(self):
-        features = []
-        if os.path.exists(self.features_file):
-            with open(self.features_file) as f:
-                features = [line.strip() for line in f.readlines() if line.strip()]
-        return features
+        if not os.path.exists(self.features_file):
+            return []
+        with open(self.features_file) as f:
+            return [line.strip() for line in f if line.strip()]
 
     def register_features(self):
-        self.app.modules = {}
-        self.app.blueprint_url_prefixes = {}
-
         for feature_pkg in self._load_features():
             print(f"\n🔍 Registrando feature: {feature_pkg}")
-
             try:
                 # Importar el módulo principal
-                feature_module = importlib.import_module(feature_pkg)
-                print(f"📦 Importado paquete: {feature_module}")
+                module = importlib.import_module(feature_pkg)
 
-                # Forzar explícitamente la carga de routes.py
+                # Intentar importar explícitamente el módulo de rutas
                 try:
-                    print(f"🧪 Intentando importar {feature_pkg}.routes...")
-                    routes_module = importlib.import_module(f"{feature_pkg}.routes")
-                    print(f"✅ Módulo de rutas cargado: {routes_module}")
-                except ModuleNotFoundError as mnfe:
-                    print(f"⚠️  {feature_pkg} no tiene routes.py (y no pasa nada si no necesita rutas)")
-                except Exception as ex:
-                    print(f"🚨 Error al importar rutas de {feature_pkg}: {ex}")
+                    module_name = f"{feature_pkg}.routes"
+                    print(f"🧪 Forzando import: {module_name}")
+                    imported = __import__(module_name, fromlist=["*"])
+                    print(f"✅ Importado: {imported}")
+                except Exception as e:
+                    print(f"💥 Fallo real importando {module_name}: {type(e).__name__} -> {e}")
 
-                # Registrar cualquier blueprint definido en __init__.py
-                blueprints_registrados = 0
-                for item in dir(feature_module):
-                    maybe_bp = getattr(feature_module, item)
-                    if isinstance(maybe_bp, Blueprint):
-                        self.app.register_blueprint(maybe_bp)
-                        blueprints_registrados += 1
-                        print(f"✅ Registered blueprint '{maybe_bp.name}' from {feature_pkg}")
 
-                if blueprints_registrados == 0:
-                    print(f"⚠️  {feature_pkg} no contiene ningún blueprint en __init__.py")
-
+                # Registrar cualquier Blueprint definido en el módulo
+                for attr in dir(module):
+                    obj = getattr(module, attr)
+                    if isinstance(obj, Blueprint):
+                        if obj.name not in self.app.blueprints:
+                            self.app.register_blueprint(obj)
+                            print(f"✅ Registered blueprint '{obj.name}' from {feature_pkg}")
+                        else:
+                            print(f"⚠️  Blueprint '{obj.name}' ya registrado, se omite.")
             except Exception as e:
-                print(f"❌ Could not import feature '{feature_pkg}': {e}")
-
+                print(f"❌ Error registrando '{feature_pkg}': {e}")
