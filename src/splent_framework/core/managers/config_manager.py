@@ -28,7 +28,7 @@ class Config:
         f"mysql+pymysql://{os.getenv('MARIADB_USER', 'default_user')}:"
         f"{os.getenv('MARIADB_PASSWORD', 'default_password')}@"
         f"{os.getenv('MARIADB_HOSTNAME', 'localhost')}:"
-        f"{os.getenv('MARIADB_PORT', '3306')}/"
+        f"{'3306'}/"
         f"{os.getenv('MARIADB_DATABASE', 'default_db')}"
     )
     SQLALCHEMY_TRACK_MODIFICATIONS = False
@@ -53,7 +53,7 @@ class TestingConfig(Config):
         f"mysql+pymysql://{os.getenv('MARIADB_USER', 'default_user')}:"
         f"{os.getenv('MARIADB_PASSWORD', 'default_password')}@"
         f"{os.getenv('MARIADB_HOSTNAME', 'localhost')}:"
-        f"{os.getenv('MARIADB_PORT', '3306')}/"
+        f"{'3306'}/"
         f"{os.getenv('MARIADB_TEST_DATABASE', 'default_db')}"
     )
     WTF_CSRF_ENABLED = False

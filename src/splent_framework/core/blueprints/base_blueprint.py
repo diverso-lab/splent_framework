@@ -29,7 +29,7 @@ class BaseBlueprint(Blueprint):
             root_path=root_path,
         )
         self.module_path = os.path.join(PathUtils.get_modules_dir(), name)
-        self.add_asset_routes()
+        # self.add_asset_routes()
 
     def add_asset_routes(self):
         """Define a dynamic route to serve any file inside subfolders under assets (e.g., js, css)."""
