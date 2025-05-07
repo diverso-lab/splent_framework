@@ -5,6 +5,8 @@ from splent_cli.utils.path_utils import PathUtils
 
 
 class FeatureManager:
+    _already_registered = False
+
     def __init__(self, app):
         self.app = app
         self.features_file = PathUtils.get_features_file()
@@ -16,30 +18,28 @@ class FeatureManager:
             return [line.strip() for line in f if line.strip()]
 
     def register_features(self):
+        if FeatureManager._already_registered:
+            print("⚠️ Features already registered. Skipping duplicate call.")
+            return
+
+        FeatureManager._already_registered = True
+
         for feature_pkg in self._load_features():
-            print(f"\n🔍 Registrando feature: {feature_pkg}")
+
             try:
-                # Importar el módulo principal
+                try:
+                    importlib.import_module(f"{feature_pkg}.routes")
+                except ModuleNotFoundError:
+                    print(f"⚠️  {feature_pkg}.routes not found, omitting...")
+                    continue
+
                 module = importlib.import_module(feature_pkg)
 
-                # Intentar importar explícitamente el módulo de rutas
-                try:
-                    module_name = f"{feature_pkg}.routes"
-                    print(f"🧪 Forzando import: {module_name}")
-                    imported = __import__(module_name, fromlist=["*"])
-                    print(f"✅ Importado: {imported}")
-                except Exception as e:
-                    print(f"💥 Fallo real importando {module_name}: {type(e).__name__} -> {e}")
-
-
-                # Registrar cualquier Blueprint definido en el módulo
                 for attr in dir(module):
                     obj = getattr(module, attr)
                     if isinstance(obj, Blueprint):
                         if obj.name not in self.app.blueprints:
                             self.app.register_blueprint(obj)
-                            print(f"✅ Registered blueprint '{obj.name}' from {feature_pkg}")
-                        else:
-                            print(f"⚠️  Blueprint '{obj.name}' ya registrado, se omite.")
+
             except Exception as e:
-                print(f"❌ Error registrando '{feature_pkg}': {e}")
+                print(f"❌ Error registring '{feature_pkg}': {type(e).__name__} -> {e}")
