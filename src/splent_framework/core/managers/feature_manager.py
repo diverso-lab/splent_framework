@@ -1,5 +1,6 @@
 import os
 import importlib
+import tomllib
 from flask import Blueprint
 from splent_cli.utils.path_utils import PathUtils
 
@@ -9,13 +10,21 @@ class FeatureManager:
 
     def __init__(self, app):
         self.app = app
-        self.features_file = PathUtils.get_features_file()
 
     def _load_features(self):
-        if not os.path.exists(self.features_file):
+        pyproject_path = os.path.join(PathUtils.get_working_dir(), "splent_app", "pyproject.toml")
+
+        if not os.path.exists(pyproject_path):
+            print(f"❌ pyproject.toml not found at {pyproject_path}")
             return []
-        with open(self.features_file) as f:
-            return [line.strip() for line in f if line.strip()]
+
+        try:
+            with open(pyproject_path, "rb") as f:
+                data = tomllib.load(f)
+            return data["project"]["optional-dependencies"].get("features", [])
+        except Exception as e:
+            print(f"❌ Failed to parse features from pyproject.toml: {e}")
+            return []
 
     def register_features(self):
         if FeatureManager._already_registered:
@@ -43,3 +52,21 @@ class FeatureManager:
 
             except Exception as e:
                 print(f"❌ Error registring '{feature_pkg}': {type(e).__name__} -> {e}")
+
+    def get_features(self):
+        """
+        Returns a tuple: (loaded_features, ignored_features)
+        """
+        all_features = self._load_features()
+        ignored_features = []
+
+        # Read .featureignore if exists
+        featureignore_path = os.path.join(PathUtils.get_app_base_dir(), ".featureignore")
+        if os.path.exists(featureignore_path):
+            with open(featureignore_path) as f:
+                ignored_features = [line.strip() for line in f if line.strip()]
+
+        # Features loaded are all but ignored
+        loaded_features = [f for f in all_features if f not in ignored_features]
+
+        return loaded_features, ignored_features

@@ -23,17 +23,18 @@ class BaseBlueprint(Blueprint):
             static_folder=static_folder,
             static_url_path=static_url_path,
             template_folder=template_folder,
-            url_prefix=url_prefix,
+            url_prefix=url_prefix,  
             subdomain=subdomain,
             url_defaults=url_defaults,
             root_path=root_path,
         )
-        self.module_path = os.path.join(PathUtils.get_modules_dir(), name)
-        # self.add_asset_routes()
+        full_name_feature = f"splent_feature_{name}"
+        self.feature_code_path = os.path.join(PathUtils.get_working_dir(), full_name_feature, "src", full_name_feature)
+        self.add_asset_routes()
 
     def add_asset_routes(self):
         """Define a dynamic route to serve any file inside subfolders under assets (e.g., js, css)."""
-        assets_folder = os.path.join(self.module_path, "assets")
+        assets_folder = os.path.join(self.feature_code_path, "assets")
         if os.path.exists(assets_folder):
             # Define a route for any file inside the 'assets' folder and its subfolders
             self.add_url_rule(
@@ -46,9 +47,7 @@ class BaseBlueprint(Blueprint):
 
     def send_file(self, subfolder, filename):
         """Send any file located in the specified subfolder within the assets folder."""
-        file_path = os.path.join(
-            self.module_path, "assets", subfolder, filename
-        )
+        file_path = os.path.join(self.feature_code_path, "assets", subfolder, filename)
 
         if filename == "webpack.config.js":
             abort(403, description="Access to this file is forbidden")
@@ -64,13 +63,10 @@ class BaseBlueprint(Blueprint):
                 else:
                     mimetype = "text/plain"
 
-                with open(file_path) as file:
+                with open(file_path, "r") as file:
                     file_content = file.read()
                 return Response(file_content, mimetype=mimetype)
             except FileNotFoundError:
                 abort(404, description=f"File not found: {file_path}")
         else:
-            abort(
-                404,
-                description=f"Invalid path or file: {subfolder}/{filename}",
-            )
+            abort(404, description=f"Invalid path or file: {subfolder}/{filename}")
