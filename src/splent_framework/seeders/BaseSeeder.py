@@ -1,4 +1,4 @@
-from splent_framework.core.db import db
+from splent_framework.db import db
 from sqlalchemy.exc import IntegrityError
 from datetime import datetime
 

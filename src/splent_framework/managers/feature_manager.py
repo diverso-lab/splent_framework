@@ -3,6 +3,7 @@ import importlib
 import tomllib
 from flask import Blueprint
 from splent_cli.utils.path_utils import PathUtils
+from flask import current_app
 
 
 class FeatureManager:
@@ -32,6 +33,9 @@ class FeatureManager:
             return
 
         FeatureManager._already_registered = True
+        
+        if not hasattr(self.app, "context_processors"):
+            self.app.context_processors = []
 
         for feature_pkg in self._load_features():
 
@@ -53,12 +57,28 @@ class FeatureManager:
                     raise
 
                 module = importlib.import_module(feature_pkg)
+                
+                # Init feature
+                if hasattr(module, "init_feature") and callable(getattr(module, "init_feature")):
+                    module.init_feature(self.app)
 
+                # Register blueprint
                 for attr in dir(module):
                     obj = getattr(module, attr)
                     if isinstance(obj, Blueprint):
                         if obj.name not in self.app.blueprints:
                             self.app.register_blueprint(obj)
+                 
+                 # Inject context vars into Jinja templates           
+                try:
+                    module = importlib.import_module(feature_pkg)
+
+                    if hasattr(module, "inject_context_vars"):
+                        fn = getattr(module, "inject_context_vars")
+                        if callable(fn):
+                            self.app.context_processors.append(fn)
+                except Exception as e:
+                    print(f"⚠️ Error registering context vars from {feature_pkg}: {e}")
 
             except Exception as e:
                 print(f"❌ Error registring '{feature_pkg}': {type(e).__name__} -> {e}")

@@ -2,24 +2,6 @@ import os
 import redis
 
 
-class ConfigManager:
-    def __init__(self, app):
-        self.app = app
-
-    def load_config(self, config_name="development"):
-        # If config_name is not provided, use the environment variable FLASK_ENV
-        if config_name is None:
-            config_name = os.getenv("FLASK_ENV", "development")
-
-        # Load configuration
-        if config_name == "testing":
-            self.app.config.from_object(TestingConfig)
-        elif config_name == "production":
-            self.app.config.from_object(ProductionConfig)
-        else:
-            self.app.config.from_object(DevelopmentConfig)
-
-
 class Config:
     SECRET_KEY = os.getenv(
         "SECRET_KEY", "dev_test_key_1234567890abcdefghijklmnopqrstu"

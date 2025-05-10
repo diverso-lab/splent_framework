@@ -1,5 +1,5 @@
 import pytest
-from splent_framework.core.db import db
+from splent_framework.db import db
 
 
 @pytest.fixture(scope="function")

@@ -1,4 +1,4 @@
-from splent_framework.core.db import db
+from splent_framework.db import db
 from typing import Generic, List, NoReturn, Optional, TypeVar, Union
 T = TypeVar("T")
 
