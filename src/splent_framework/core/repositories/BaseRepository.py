@@ -1,12 +1,12 @@
+from splent_framework.core.db import db
 from typing import Generic, List, NoReturn, Optional, TypeVar, Union
 T = TypeVar("T")
 
 
 class BaseRepository(Generic[T]):
     def __init__(self, model: T):
-        from splent_cli.utils.dynamic_imports import get_db
         self.model = model
-        self.session = get_db().session
+        self.session = db.session
 
     def create(self, commit: bool = True, **kwargs) -> T:
         instance: T = self.model(**kwargs)

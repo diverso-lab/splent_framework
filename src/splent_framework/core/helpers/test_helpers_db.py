@@ -1,7 +1,6 @@
 import pytest
-from splent_cli.utils.dynamic_imports import get_db
+from splent_framework.core.db import db
 
-db = get_db()
 
 @pytest.fixture(scope="function")
 def clean_database():

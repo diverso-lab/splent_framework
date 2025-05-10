@@ -38,9 +38,19 @@ class FeatureManager:
             try:
                 try:
                     importlib.import_module(f"{feature_pkg}.routes")
+                except ModuleNotFoundError as e:
+                    print(f"⚠️  {feature_pkg}.routes not found: {e}")
+                except Exception as e:
+                    print(f"❌ Error while importing {feature_pkg}.routes: {e}")
+                    raise
+                
+                try:
+                    importlib.import_module(f"{feature_pkg}.models")
                 except ModuleNotFoundError:
-                    print(f"⚠️  {feature_pkg}.routes not found, omitting...")
-                    continue
+                    print(f"⚠️  {feature_pkg}.models not found")
+                except Exception as e:
+                    print(f"❌ Error in {feature_pkg}.models: {e}")
+                    raise
 
                 module = importlib.import_module(feature_pkg)
 
