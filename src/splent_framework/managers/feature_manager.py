@@ -43,7 +43,7 @@ class FeatureManager:
                 try:
                     importlib.import_module(f"{feature_pkg}.routes")
                 except ModuleNotFoundError as e:
-                    print(f"⚠️  {feature_pkg}.routes not found: {e}")
+                    pass
                 except Exception as e:
                     print(f"❌ Error while importing {feature_pkg}.routes: {e}")
                     raise
@@ -51,17 +51,34 @@ class FeatureManager:
                 try:
                     importlib.import_module(f"{feature_pkg}.models")
                 except ModuleNotFoundError:
-                    print(f"⚠️  {feature_pkg}.models not found")
+                    pass
                 except Exception as e:
                     print(f"❌ Error in {feature_pkg}.models: {e}")
                     raise
 
                 module = importlib.import_module(feature_pkg)
                 
+                # Config feature
+                try:
+                    config_module = importlib.import_module(f"{feature_pkg}.config")
+                    if hasattr(config_module, "inject_config"):
+                        config_module.inject_config(self.app)
+                except ModuleNotFoundError:
+                    pass
+                except Exception as e:
+                    print(f"❌ Error in {feature_pkg}.config: {e}")
+                    raise
+                                    
                 # Init feature
-                if hasattr(module, "init_feature") and callable(getattr(module, "init_feature")):
-                    module.init_feature(self.app)
-
+                try:
+                    if hasattr(module, "init_feature") and callable(module.init_feature):
+                        module.init_feature(self.app)
+                except ModuleNotFoundError:
+                    pass
+                except Exception as e:
+                    print(f"❌ Error in {feature_pkg}.init_feature: {e}")
+                    raise
+        
                 # Register blueprint
                 for attr in dir(module):
                     obj = getattr(module, attr)

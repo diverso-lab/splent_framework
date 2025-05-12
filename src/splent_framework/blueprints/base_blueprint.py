@@ -42,8 +42,6 @@ class BaseBlueprint(Blueprint):
                 "assets",
                 self.send_file,
             )
-        else:
-            print(f"(BaseBlueprint) -> {assets_folder} does not exist.")
 
     def send_file(self, subfolder, filename):
         """Send any file located in the specified subfolder within the assets folder."""
