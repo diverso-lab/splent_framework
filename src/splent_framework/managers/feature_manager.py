@@ -29,7 +29,6 @@ class FeatureManager:
 
     def register_features(self):
         if FeatureManager._already_registered:
-            print("⚠️ Features already registered. Skipping duplicate call.")
             return
 
         FeatureManager._already_registered = True

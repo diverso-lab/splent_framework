@@ -28,4 +28,16 @@ class ConfigManager:
         if config_class is None:
             raise RuntimeError(f"❌ Could not find class '{config_class_name}' in '{splent_app}.config'")
 
-        self.app.config.from_object(config_class)
+        # Instanciar para que se ejecute __init__ y se genere bien la config
+        config_instance = config_class()
+
+        # Extraer configuración completa, combinando atributos de instancia y clase
+        config_data = {
+            k: v for k, v in config_instance.__dict__.items() if k.isupper()
+        }
+
+        for k in dir(config_instance):
+            if k.isupper() and k not in config_data:
+                config_data[k] = getattr(config_instance, k)
+
+        self.app.config.from_mapping(config_data)
