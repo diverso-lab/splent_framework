@@ -95,6 +95,15 @@ class FeatureManager:
                             self.app.context_processors.append(fn)
                 except Exception as e:
                     print(f"⚠️ Error registering context vars from {feature_pkg}: {e}")
+                    
+                # Register template hooks if present
+                try:
+                    importlib.import_module(f"{feature_pkg}.hooks")
+                except ModuleNotFoundError:
+                    pass
+                except Exception as e:
+                    print(f"⚠️ Error in {feature_pkg}.hooks: {e}")
+
 
             except Exception as e:
                 print(f"❌ Error registring '{feature_pkg}': {type(e).__name__} -> {e}")
