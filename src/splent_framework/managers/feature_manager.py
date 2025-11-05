@@ -3,7 +3,6 @@ import importlib
 import tomllib
 from flask import Blueprint
 from splent_cli.utils.path_utils import PathUtils
-from flask import current_app
 
 
 class FeatureManager:
@@ -13,7 +12,8 @@ class FeatureManager:
         self.app = app
 
     def _load_features(self):
-        pyproject_path = os.path.join(PathUtils.get_working_dir(), "splent_app", "pyproject.toml")
+        splent_app = os.getenv('SPLENT_APP')
+        pyproject_path = os.path.join(PathUtils.get_working_dir(), splent_app, "pyproject.toml")
 
         if not os.path.exists(pyproject_path):
             print(f"❌ pyproject.toml not found at {pyproject_path}")
