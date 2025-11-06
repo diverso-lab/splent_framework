@@ -23,13 +23,29 @@ class BaseBlueprint(Blueprint):
             static_folder=static_folder,
             static_url_path=static_url_path,
             template_folder=template_folder,
-            url_prefix=url_prefix,  
+            url_prefix=url_prefix,
             subdomain=subdomain,
             url_defaults=url_defaults,
             root_path=root_path,
         )
+
+        # 🧠 Detect feature name and version
         full_name_feature = f"splent_feature_{name}"
-        self.feature_code_path = os.path.join(PathUtils.get_working_dir(), full_name_feature, "src", full_name_feature)
+        workspace = PathUtils.get_working_dir()
+        product = os.getenv("SPLENT_APP")
+
+        # 🔍 Search for feature folder with or without version (@v1.0.0)
+        feature_base_dir = os.path.join(workspace, product, "features")
+        feature_path = None
+        for folder in os.listdir(feature_base_dir):
+            if folder.startswith(full_name_feature):
+                feature_path = os.path.join(feature_base_dir, folder)
+                break
+
+        if not feature_path:
+            raise RuntimeError(f"❌ Feature folder not found for {full_name_feature} in {feature_base_dir}")
+
+        self.feature_code_path = os.path.join(feature_path, "src", full_name_feature)
         self.add_asset_routes()
 
     def add_asset_routes(self):
