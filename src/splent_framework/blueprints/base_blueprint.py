@@ -1,14 +1,12 @@
+# base_blueprint.py
 from flask import Blueprint, Response, abort
-import os
-
-from splent_cli.utils.path_utils import PathUtils
-
+import os, sys, importlib
 
 class BaseBlueprint(Blueprint):
     def __init__(
         self,
         name,
-        import_name,
+        import_name,                # <-- viene de la feature, suele ser __name__
         static_folder=None,
         static_url_path=None,
         template_folder=None,
@@ -29,30 +27,25 @@ class BaseBlueprint(Blueprint):
             root_path=root_path,
         )
 
-        # 🧠 Detect feature name and version
-        full_name_feature = f"splent_feature_{name}"
-        workspace = PathUtils.get_working_dir()
-        product = os.getenv("SPLENT_APP")
+        # En lugar de peinar /workspace/<app>/features..., resolvemos por el módulo Python:
+        try:
+            module = sys.modules.get(import_name) or importlib.import_module(import_name)
+            pkg_dir = os.path.dirname(module.__file__)
+        except Exception as e:
+            raise RuntimeError(f"No puedo resolver la ruta de paquete para {import_name}: {e}")
 
-        # 🔍 Search for feature folder with or without version (@v1.0.0)
-        feature_base_dir = os.path.join(workspace, product, "features")
-        feature_path = None
-        for folder in os.listdir(feature_base_dir):
-            if folder.startswith(full_name_feature):
-                feature_path = os.path.join(feature_base_dir, folder)
-                break
+        # Aquí vive tu feature (src/splent_io/splent_feature_xxx)
+        self.feature_code_path = pkg_dir
 
-        if not feature_path:
-            raise RuntimeError(f"❌ Feature folder not found for {full_name_feature} in {feature_base_dir}")
+        # Si no te pasan template_folder, usa el de la feature
+        if self.template_folder is None:
+            self.template_folder = os.path.join(self.feature_code_path, "templates")
 
-        self.feature_code_path = os.path.join(feature_path, "src", full_name_feature)
         self.add_asset_routes()
 
     def add_asset_routes(self):
-        """Define a dynamic route to serve any file inside subfolders under assets (e.g., js, css)."""
         assets_folder = os.path.join(self.feature_code_path, "assets")
         if os.path.exists(assets_folder):
-            # Define a route for any file inside the 'assets' folder and its subfolders
             self.add_url_rule(
                 f"/{self.name}/<path:subfolder>/<path:filename>",
                 "assets",
@@ -60,27 +53,21 @@ class BaseBlueprint(Blueprint):
             )
 
     def send_file(self, subfolder, filename):
-        """Send any file located in the specified subfolder within the assets folder."""
         file_path = os.path.join(self.feature_code_path, "assets", subfolder, filename)
 
         if filename == "webpack.config.js":
             abort(403, description="Access to this file is forbidden")
 
-        # Check if the file exists and is located within a valid subfolder (e.g., js, css)
         if os.path.exists(file_path) and subfolder in ["js", "css", "dist"]:
             try:
-                # Detect the correct MIME type based on file extension
                 if filename.endswith(".js"):
                     mimetype = "application/javascript"
                 elif filename.endswith(".css"):
                     mimetype = "text/css"
                 else:
                     mimetype = "text/plain"
-
-                with open(file_path, "r") as file:
-                    file_content = file.read()
-                return Response(file_content, mimetype=mimetype)
+                with open(file_path, "r") as f:
+                    return Response(f.read(), mimetype=mimetype)
             except FileNotFoundError:
                 abort(404, description=f"File not found: {file_path}")
-        else:
-            abort(404, description=f"Invalid path or file: {subfolder}/{filename}")
+        abort(404, description=f"Invalid path or file: {subfolder}/{filename}")
