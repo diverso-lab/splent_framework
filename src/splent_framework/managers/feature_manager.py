@@ -109,7 +109,7 @@ class FeatureManager:
             org, rest = "splent-io", entry
 
         name, sep, version = rest.partition("@")
-        version = version if sep else self.default_version
+        version = version if sep else None
         if not name:
             raise FeatureError(f"Invalid feature entry (empty name): {entry}")
 
@@ -119,39 +119,60 @@ class FeatureManager:
     # =========================
     # Carga de una feature
     # =========================
+
     def _load_one_feature(self, product_features_dir: str, ref: FeatureRef) -> None:
         """
         Valida estructura, prepara sys.path, importa el paquete y realiza integración (config, init, blueprints).
+        Soporta features con o sin versión declarada.
         """
 
-        link_path = os.path.join(product_features_dir, ref.org_safe, f"{ref.name}@{ref.version}")
-        if not os.path.exists(link_path):
-            raise FeatureError(f"Feature link not found: {link_path}")
+        # 1️⃣ Determinar la ruta del enlace (link_path)
+        if ref.version:
+            # Si hay versión explícita, buscar el enlace versionado
+            link_path = os.path.join(product_features_dir, ref.org_safe, f"{ref.name}@{ref.version}")
+        else:
+            # Si no hay versión, buscar enlace simple
+            link_path = os.path.join(product_features_dir, ref.org_safe, ref.name)
 
+        # 2️⃣ Si no existe, aplicar fallback inteligente
+        if not os.path.exists(link_path):
+            import glob
+            # Buscar cualquier versión disponible de esa feature
+            candidates = sorted(glob.glob(os.path.join(product_features_dir, ref.org_safe, f"{ref.name}@*")))
+            if candidates:
+                link_path = candidates[0]
+                print(f"   ⚠️ Using available version for {ref.name}: {os.path.basename(link_path)}")
+            else:
+                raise FeatureError(f"Feature link not found: {link_path}")
+
+        # 3️⃣ Resolver paths internos (src/org_safe/feature_name)
         feature_dir = os.path.realpath(link_path)
         src_root, org_ns_dir, pkg_dir = self._resolve_feature_paths(feature_dir, ref)
 
-        # Añadir el directorio del namespace (src/<org_safe>) al sys.path para habilitar import splent_io.x
+        # 4️⃣ Añadir src_root a sys.path (para habilitar import splent_io.x)
         self._ensure_namespace_on_syspath(src_root)
 
         import_name = ref.import_name()
 
-        # Import del módulo raíz
+        # 5️⃣ Importar el módulo raíz
         module = self._import_strict(import_name, err=f"Cannot import {import_name}")
 
-        # Carga estricta de submódulos típicos
+        # 6️⃣ Carga estricta de submódulos típicos
         self._import_submodule_strict(import_name, "routes")
         self._import_submodule_strict(import_name, "models")
         self._import_submodule_strict(import_name, "hooks")
 
-        # Configuración (si existe)
+        # 7️⃣ Configuración (si existe)
         self._inject_config_if_present(import_name)
 
-        # Inicialización personalizada (si existe)
+        # 8️⃣ Inicialización personalizada (si existe)
         self._call_init_feature_if_present(module, import_name)
 
-        # Blueprints declarados a nivel de módulo
+        # 9️⃣ Registro de blueprints
         self._register_blueprints_on_module(module, import_name)
+
+
+
 
     def _resolve_feature_paths(self, feature_dir: str, ref: FeatureRef) -> Tuple[str, str, str]:
         """
