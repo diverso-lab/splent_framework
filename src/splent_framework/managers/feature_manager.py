@@ -171,9 +171,6 @@ class FeatureManager:
         # 9️⃣ Registro de blueprints
         self._register_blueprints_on_module(module, import_name)
 
-
-
-
     def _resolve_feature_paths(self, feature_dir: str, ref: FeatureRef) -> Tuple[str, str, str]:
         """
         Devuelve (src_root, org_ns_dir, pkg_dir) y valida su existencia.
@@ -199,7 +196,6 @@ class FeatureManager:
         if src_root not in sys.path:
             sys.path.insert(0, src_root)
             print(f"📚 Source path added: {src_root}")
-
 
     # =========================
     # Integraciones
@@ -268,8 +264,6 @@ class FeatureManager:
             if self.strict:
                 raise FeatureError(f"No blueprints found in {import_name}")
 
-
-
     # =========================
     # Utilidades de import
     # =========================
@@ -292,3 +286,16 @@ class FeatureManager:
         except Exception as e:
             # Otros errores sí se consideran graves
             raise FeatureError(f"Cannot import {base}.{sub}: {e}") from e
+
+    def get_features(self) -> list[str]:
+        """
+        Devuelve las features declaradas en el pyproject.toml del producto activo.
+        No valida ni resuelve versiones; simplemente lista el contenido de
+        [project.optional-dependencies.features].
+        """
+        splent_app = os.getenv("SPLENT_APP")
+        if not splent_app:
+            raise FeatureError("SPLENT_APP not set")
+
+        features = self._load_feature_list_from_pyproject(splent_app)
+        return features or []
