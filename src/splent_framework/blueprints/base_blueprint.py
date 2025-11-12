@@ -1,12 +1,15 @@
 # base_blueprint.py
 from flask import Blueprint, Response, abort
-import os, sys, importlib
+import os
+import sys
+import importlib
+
 
 class BaseBlueprint(Blueprint):
     def __init__(
         self,
         name,
-        import_name,                # <-- viene de la feature, suele ser __name__
+        import_name,  # <-- viene de la feature, suele ser __name__
         static_folder=None,
         static_url_path=None,
         template_folder=None,
@@ -29,10 +32,14 @@ class BaseBlueprint(Blueprint):
 
         # En lugar de peinar /workspace/<app>/features..., resolvemos por el módulo Python:
         try:
-            module = sys.modules.get(import_name) or importlib.import_module(import_name)
+            module = sys.modules.get(import_name) or importlib.import_module(
+                import_name
+            )
             pkg_dir = os.path.dirname(module.__file__)
         except Exception as e:
-            raise RuntimeError(f"No puedo resolver la ruta de paquete para {import_name}: {e}")
+            raise RuntimeError(
+                f"No puedo resolver la ruta de paquete para {import_name}: {e}"
+            )
 
         # Aquí vive tu feature (src/splent_io/splent_feature_xxx)
         self.feature_code_path = pkg_dir

@@ -20,21 +20,22 @@ class ConfigManager:
             config_module = importlib.import_module(f"{splent_app}.config")
         except ModuleNotFoundError:
             from splent_framework.configuration import default_config as config_module
-            print(f"⚠️ Using SPLENT default config (no product config.py found)")
+
+            print("⚠️ Using SPLENT default config (no product config.py found)")
 
         config_class_name = f"{config_name.capitalize()}Config"
         config_class = getattr(config_module, config_class_name, None)
 
         if config_class is None:
-            raise RuntimeError(f"❌ Could not find class '{config_class_name}' in '{splent_app}.config'")
+            raise RuntimeError(
+                f"❌ Could not find class '{config_class_name}' in '{splent_app}.config'"
+            )
 
         # Instanciar para que se ejecute __init__ y se genere bien la config
         config_instance = config_class()
 
         # Extraer configuración completa, combinando atributos de instancia y clase
-        config_data = {
-            k: v for k, v in config_instance.__dict__.items() if k.isupper()
-        }
+        config_data = {k: v for k, v in config_instance.__dict__.items() if k.isupper()}
 
         for k in dir(config_instance):
             if k.isupper() and k not in config_data:

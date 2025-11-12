@@ -25,9 +25,7 @@ class GenericResource(Resource):
             return self.serializer.serialize(item), 200
         else:
             items = self.model.query.all()
-            return {
-                "items": [self.serializer.serialize(i) for i in items]
-            }, 200
+            return {"items": [self.serializer.serialize(i) for i in items]}, 200
 
     def post(self):
         data = request.get_json()

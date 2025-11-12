@@ -6,5 +6,6 @@ def login(test_client, email, password):
     )
     return response
 
+
 def logout(test_client):
     return test_client.get("/logout", follow_redirects=True)

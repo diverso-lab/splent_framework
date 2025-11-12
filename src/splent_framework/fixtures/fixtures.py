@@ -37,7 +37,7 @@ def test_client(test_app):
 @pytest.fixture(scope="module")
 def test_client_module(test_app):
     """
-    Test client compartido para todo el módulo. 
+    Test client compartido para todo el módulo.
     Limpia la DB solo al principio y al final del módulo.
     """
     with test_app.app_context():

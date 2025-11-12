@@ -2,6 +2,7 @@ from flask_migrate import Migrate
 from splent_cli.utils.path_utils import PathUtils
 from splent_framework.db import db
 
+
 class MigrateManager:
     def __init__(self, app):
         self.app = app

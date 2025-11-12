@@ -20,10 +20,10 @@ class FeatureError(RuntimeError):
 # =========================
 @dataclass(frozen=True)
 class FeatureRef:
-    org: str           # org original (p.ej. "splent-io")
-    org_safe: str      # org para namespace python (p.ej. "splent_io")
-    name: str          # p.ej. "splent_feature_auth"
-    version: str       # p.ej. "v1.0.0"
+    org: str  # org original (p.ej. "splent-io")
+    org_safe: str  # org para namespace python (p.ej. "splent_io")
+    name: str  # p.ej. "splent_feature_auth"
+    version: str  # p.ej. "v1.0.0"
 
     def import_name(self) -> str:
         return f"{self.org_safe}.{self.name}"
@@ -56,7 +56,6 @@ class FeatureManager:
     # API pública
     # =========================
     def register_features(self) -> None:
-        
         if FeatureManager._already_registered:
             return
         FeatureManager._already_registered = True
@@ -84,7 +83,9 @@ class FeatureManager:
     # Carga de configuración
     # =========================
     def _load_feature_list_from_pyproject(self, splent_app: str) -> List[str]:
-        pyproject_path = os.path.join(PathUtils.get_working_dir(), splent_app, "pyproject.toml")
+        pyproject_path = os.path.join(
+            PathUtils.get_working_dir(), splent_app, "pyproject.toml"
+        )
         if not os.path.exists(pyproject_path):
             raise FeatureError(f"pyproject.toml not found at {pyproject_path}")
 
@@ -93,12 +94,16 @@ class FeatureManager:
                 data = tomllib.load(f)
             features = data["project"]["optional-dependencies"].get("features", [])
             if not isinstance(features, list):
-                raise FeatureError("Invalid [project.optional-dependencies.features] format (expected list)")
+                raise FeatureError(
+                    "Invalid [project.optional-dependencies.features] format (expected list)"
+                )
             # normalizamos espacios o entradas vacías
             features = [x.strip() for x in features if isinstance(x, str) and x.strip()]
             return features
         except Exception as e:
-            raise FeatureError(f"Failed to parse features in {pyproject_path}: {e}") from e
+            raise FeatureError(
+                f"Failed to parse features in {pyproject_path}: {e}"
+            ) from e
 
     def _parse_feature_entry(self, entry: str) -> FeatureRef:
         # Formatos admitidos:
@@ -129,7 +134,9 @@ class FeatureManager:
         # 1️⃣ Determinar la ruta del enlace (link_path)
         if ref.version:
             # Si hay versión explícita, buscar el enlace versionado
-            link_path = os.path.join(product_features_dir, ref.org_safe, f"{ref.name}@{ref.version}")
+            link_path = os.path.join(
+                product_features_dir, ref.org_safe, f"{ref.name}@{ref.version}"
+            )
         else:
             # Si no hay versión, buscar enlace simple
             link_path = os.path.join(product_features_dir, ref.org_safe, ref.name)
@@ -137,11 +144,18 @@ class FeatureManager:
         # 2️⃣ Si no existe, aplicar fallback inteligente
         if not os.path.exists(link_path):
             import glob
+
             # Buscar cualquier versión disponible de esa feature
-            candidates = sorted(glob.glob(os.path.join(product_features_dir, ref.org_safe, f"{ref.name}@*")))
+            candidates = sorted(
+                glob.glob(
+                    os.path.join(product_features_dir, ref.org_safe, f"{ref.name}@*")
+                )
+            )
             if candidates:
                 link_path = candidates[0]
-                print(f"   ⚠️ Using available version for {ref.name}: {os.path.basename(link_path)}")
+                print(
+                    f"   ⚠️ Using available version for {ref.name}: {os.path.basename(link_path)}"
+                )
             else:
                 raise FeatureError(f"Feature link not found: {link_path}")
 
@@ -171,7 +185,9 @@ class FeatureManager:
         # 9️⃣ Registro de blueprints
         self._register_blueprints_on_module(module, import_name)
 
-    def _resolve_feature_paths(self, feature_dir: str, ref: FeatureRef) -> Tuple[str, str, str]:
+    def _resolve_feature_paths(
+        self, feature_dir: str, ref: FeatureRef
+    ) -> Tuple[str, str, str]:
         """
         Devuelve (src_root, org_ns_dir, pkg_dir) y valida su existencia.
         """
@@ -214,7 +230,9 @@ class FeatureManager:
             try:
                 config_mod.inject_config(self.app)
             except Exception as e:
-                raise FeatureError(f"Error in {import_name}.config.inject_config: {e}") from e
+                raise FeatureError(
+                    f"Error in {import_name}.config.inject_config: {e}"
+                ) from e
         elif self.strict:
             raise FeatureError(f"{import_name}.config lacks inject_config(app)")
 
@@ -223,7 +241,9 @@ class FeatureManager:
             try:
                 module.init_feature(self.app)
             except Exception as e:
-                raise FeatureError(f"Error in {import_name}.init_feature(app): {e}") from e
+                raise FeatureError(
+                    f"Error in {import_name}.init_feature(app): {e}"
+                ) from e
         elif self.strict:
             raise FeatureError(f"{import_name} lacks init_feature(app)")
 
@@ -250,14 +270,18 @@ class FeatureManager:
                 if isinstance(obj, Blueprint):
                     if obj.name in self.app.blueprints:
                         if self.strict:
-                            raise FeatureError(f"Blueprint name collision: {obj.name} in {mod.__name__}")
+                            raise FeatureError(
+                                f"Blueprint name collision: {obj.name} in {mod.__name__}"
+                            )
                         continue
 
                     try:
                         self.app.register_blueprint(obj)
                         registered += 1
                     except Exception as e:
-                        print(f"      ❌ Failed to register blueprint '{obj.name}': {e}")
+                        print(
+                            f"      ❌ Failed to register blueprint '{obj.name}': {e}"
+                        )
 
         if registered == 0:
             print(f"   ⚠️ No blueprints registered for {import_name}")

@@ -9,7 +9,6 @@ logger = logging.getLogger(__name__)
 
 
 class TaskQueueManager:
-
     _instance = None
 
     def __new__(cls, *args, **kwargs):
