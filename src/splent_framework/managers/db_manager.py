@@ -1,14 +1,15 @@
-from flask_migrate import Migrate
-from splent_cli.utils.path_utils import PathUtils
-from splent_framework.db import db
+from splent_framework.managers.migration_manager import MigrationManager
 
 
-class MigrateManager:
-    def __init__(self, app):
-        self.app = app
-        self.migrate = Migrate(directory=PathUtils.get_migrations_dir())
-        self.init()
+class MigrateManager(MigrationManager):
+    """
+    Backward-compatible alias for MigrationManager.
 
-    def init(self):
-        db.init_app(self.app)
-        self.migrate.init_app(self.app, db)
+    App factories that import MigrateManager continue to work without changes:
+
+        from splent_framework.managers.db_manager import MigrateManager
+        MigrateManager(app)
+
+    All migration logic — including splent_migrations table creation and
+    per-feature migration support — is now in MigrationManager.
+    """
