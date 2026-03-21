@@ -1,6 +1,6 @@
 import pytest
 from splent_framework.db import db
-from splent_cli.utils.dynamic_imports import get_create_app_in_testing_mode
+from splent_framework.utils.app_loader import get_create_app_in_testing_mode
 
 
 @pytest.fixture(scope="session")

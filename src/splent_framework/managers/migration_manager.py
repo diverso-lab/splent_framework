@@ -51,7 +51,7 @@ class MigrationManager:
     # ──────────────────────────── initialisation ───────────────────────────
 
     def _init_flask_migrate(self) -> None:
-        from splent_cli.utils.path_utils import PathUtils
+        from splent_framework.utils.path_utils import PathUtils
 
         self.migrate = Migrate(directory=PathUtils.get_migrations_dir())
         db.init_app(self.app)
@@ -102,7 +102,7 @@ class MigrationManager:
         Return ``{feature_name: migrations_dir}`` for every feature declared in
         the product's pyproject.toml that has a ``migrations/`` directory on disk.
         """
-        from splent_cli.utils.feature_utils import get_features_from_pyproject
+        from splent_framework.utils.feature_utils import get_features_from_pyproject
 
         result: dict[str, str] = {}
         for spec in get_features_from_pyproject() or []:

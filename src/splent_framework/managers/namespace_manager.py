@@ -4,7 +4,7 @@ import glob
 import importlib
 import os
 import sys
-from splent_cli.utils.path_utils import PathUtils
+from splent_framework.utils.path_utils import PathUtils
 
 
 class NamespaceManager:
