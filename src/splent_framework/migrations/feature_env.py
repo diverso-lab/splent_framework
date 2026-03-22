@@ -30,8 +30,6 @@ Design notes:
 from logging.config import fileConfig
 
 from flask import current_app
-from sqlalchemy import pool
-from sqlalchemy.engine import Connection
 from alembic import context
 
 from splent_framework.db import db

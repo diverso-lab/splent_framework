@@ -50,6 +50,7 @@ class PathUtils:
     @staticmethod
     def get_uploads_dir():
         from splent_framework.configuration.configuration import uploads_folder_name
+
         splent_app = os.getenv("SPLENT_APP")
         working_dir = PathUtils.get_working_dir()
 
