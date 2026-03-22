@@ -21,15 +21,24 @@ Each feature's Alembic state is additionally tracked in a dedicated table
 migrate/upgrade the CLI syncs the current revision into ``splent_migrations``.
 """
 
+import logging
 import os
 import importlib.util
 
 from flask_migrate import Migrate
 from sqlalchemy import text
+from sqlalchemy import exc as sa_exc
 
 from splent_framework.db import db
 
+logger = logging.getLogger(__name__)
+
 SPLENT_MIGRATIONS_TABLE = "splent_migrations"
+
+
+def alembic_version_table(feature_name: str) -> str:
+    """Return the Alembic version table name for a given feature."""
+    return f"alembic_{feature_name}"
 
 
 class MigrationManager:
@@ -73,8 +82,13 @@ class MigrationManager:
                             """
                         )
                     )
-            except Exception as exc:
-                print(f"⚠️  Could not ensure {SPLENT_MIGRATIONS_TABLE} table: {exc}")
+            except sa_exc.SQLAlchemyError as exc:
+                logger.error(
+                    "Could not ensure %s table: %s",
+                    SPLENT_MIGRATIONS_TABLE,
+                    exc,
+                    exc_info=True,
+                )
 
     # ──────────────────────────── static helpers ───────────────────────────
 
@@ -119,16 +133,18 @@ class MigrationManager:
         ``None`` if the table does not exist or is empty.
 
         This table is created by the feature's env.py (via ``feature_env.py``)
-        using ``version_table=f"alembic_{feature_name}"``.
+        using ``alembic_version_table(feature_name)``.
         """
-        version_table = f"alembic_{feature_name}"
+        version_table = alembic_version_table(feature_name)
         try:
             with engine.connect() as conn:
                 row = conn.execute(
                     text(f"SELECT version_num FROM `{version_table}` LIMIT 1")
                 ).fetchone()
                 return row[0] if row else None
-        except Exception:
+        except sa_exc.SQLAlchemyError:
+            # Table may not exist yet (feature not yet migrated) — this is expected
+            logger.debug("No revision found for feature '%s' (table may not exist yet)", feature_name)
             return None
 
     @staticmethod

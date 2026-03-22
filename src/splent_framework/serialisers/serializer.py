@@ -1,26 +1,33 @@
 from datetime import datetime
+from typing import Any
 
 
-def convert_value(value):
+def convert_value(value: Any) -> Any:
     if isinstance(value, datetime):
         return value.isoformat()
     return value
 
 
 class Serializer:
-    def __init__(self, serialization_fields, related_serializers=None):
+    def __init__(
+        self,
+        serialization_fields: dict[str, str],
+        related_serializers: dict[str, "Serializer"] | None = None,
+    ):
         self.serialization_fields = serialization_fields
         self.related_serializers = related_serializers or {}
 
-    def serialize(self, instance):
-        serialized_data = {}
+    def serialize(self, instance: Any) -> dict[str, Any]:
+        serialized_data: dict[str, Any] = {}
         for key, attr_name in self.serialization_fields.items():
             if key in self.related_serializers:
-                related_data = getattr(instance, attr_name)()
+                raw = getattr(instance, attr_name, None)
+                # attr_name may be a method (returns the related data) or a plain relation
+                related_data = raw() if callable(raw) else raw
                 if isinstance(related_data, list):
                     serialized_data[key] = [
-                        self.related_serializers[key].serialize(sub_instance)
-                        for sub_instance in related_data
+                        self.related_serializers[key].serialize(sub)
+                        for sub in related_data
                     ]
                 else:
                     serialized_data[key] = self.related_serializers[key].serialize(

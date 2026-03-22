@@ -4,7 +4,7 @@ from splent_framework.hooks.template_hooks import get_template_hooks
 
 
 class JinjaManager:
-    def __init__(self, app: Flask, context: dict = None):
+    def __init__(self, app: Flask, context: dict | None = None):
         self.app = app
         self.context = context or {}
         self._register_context_processor()

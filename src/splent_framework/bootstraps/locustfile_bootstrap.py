@@ -2,27 +2,30 @@ import os
 import glob
 import inspect
 import importlib.util
+import logging
 from locust import HttpUser
 from dotenv import load_dotenv
+
+logger = logging.getLogger(__name__)
 
 
 def load_locustfiles():
     load_dotenv()
     working_dir = os.getenv("WORKING_DIR", "")
-    print(f"Working directory: {working_dir}")
+    logger.debug("Working directory: %s", working_dir)
 
     module_dir = os.path.join(working_dir, "app", "modules")
-    print(f"Module directory: {module_dir}")
+    logger.debug("Module directory: %s", module_dir)
 
     locustfile_paths = glob.glob(
         os.path.join(module_dir, "*", "tests", "locustfile.py")
     )
-    print(f"Found locustfiles: {locustfile_paths}")
+    logger.debug("Found locustfiles: %s", locustfile_paths)
 
     found_user_classes = []
 
     for path in locustfile_paths:
-        print(f"Loading locustfile: {path}")
+        logger.debug("Loading locustfile: %s", path)
         module_name = os.path.splitext(os.path.basename(path))[0]
         spec = importlib.util.spec_from_file_location(module_name, path)
         locustfile = importlib.util.module_from_spec(spec)
@@ -38,7 +41,7 @@ def load_locustfiles():
                 unique_name = f"{name}_{os.path.basename(path).split('.')[0]}"
                 globals()[unique_name] = obj  # Add to globals
                 found_user_classes.append((unique_name, obj))
-                print(f"Loaded user class: {unique_name}")
+                logger.debug("Loaded user class: %s", unique_name)
 
     if not found_user_classes:
         raise ValueError("No User class found!")
@@ -47,4 +50,4 @@ def load_locustfiles():
 
 
 found_user_classes = load_locustfiles()
-print(f"Total user classes loaded: {len(found_user_classes)}")
+logger.info("Total user classes loaded: %d", len(found_user_classes))

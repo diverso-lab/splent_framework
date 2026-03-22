@@ -1,26 +1,28 @@
 import os
 import importlib
+import types
+from collections.abc import Callable
 from flask import render_template
 
 
 class ErrorHandlerManager:
-    def __init__(self, app):
+    def __init__(self, app) -> None:
         self.app = app
         self.custom_handlers = self._import_custom_handlers()
 
-    def _import_custom_handlers(self):
+    def _import_custom_handlers(self) -> types.ModuleType | None:
         splent_app = os.getenv("SPLENT_APP", "splent_app")
         try:
             return importlib.import_module(f"{splent_app}.errors")
         except ModuleNotFoundError:
             return None
 
-    def _get_handler(self, name, fallback):
+    def _get_handler(self, name: str, fallback: Callable) -> Callable:
         if self.custom_handlers and hasattr(self.custom_handlers, name):
             return getattr(self.custom_handlers, name)
         return fallback
 
-    def register_error_handlers(self):
+    def register_error_handlers(self) -> None:
         @self.app.errorhandler(500)
         def internal_error(e):
             return self._get_handler("handle_500", self._default_500)(self.app, e)

@@ -1,11 +1,14 @@
-from datetime import datetime
 import logging
-from flask import current_app
+import threading
+from datetime import datetime
+
 import pytz
+from flask import current_app
 from rq import Queue
 
-
 logger = logging.getLogger(__name__)
+
+_lock = threading.Lock()
 
 
 class TaskQueueManager:
@@ -13,8 +16,12 @@ class TaskQueueManager:
 
     def __new__(cls, *args, **kwargs):
         if cls._instance is None:
-            cls._instance = super().__new__(cls, *args, **kwargs)
-            cls._instance._initialize()
+            with _lock:
+                # Double-checked locking: re-test after acquiring the lock
+                if cls._instance is None:
+                    instance = super().__new__(cls)
+                    instance._initialize()
+                    cls._instance = instance
         return cls._instance
 
     def _initialize(self):
@@ -24,28 +31,21 @@ class TaskQueueManager:
 
     def enqueue_task(self, task_name: str, *args, timeout=None, **kwargs):
         """
-        Method to queue a custom task.
+        Queue a task for async execution via RQ.
 
-        :param task_name: Full name of the method or function to queue (e.g. ‘app.modules.hubfile.process_task_worker’).
-        :param args: Positional arguments required by the task.
-        :param timeout: Maximum task execution time in seconds (default: 180s).
-        :param kwargs: Named arguments required by the task.
+        :param task_name: Dotted path to the function (e.g. ‘app.tasks.process’).
+        :param timeout: Max execution time in seconds. Defaults to REDIS_WORKER_TIMEOUT.
         """
         if timeout is None:
-            timeout = (
-                self.redis_worker_timeout
-            )  # Asigna el timeout de la instancia si no se provee uno.
+            timeout = self.redis_worker_timeout
 
-        task_metadata = {
-            "task_name": task_name,
-            "args": args,
-            "kwargs": kwargs,
-            "timestamp": datetime.now(pytz.utc).isoformat(),
-        }
-        logger.info(f"Enqueueing task: {task_metadata}")
-
-        # Bind the custom task to RQ with timeout
-        self.queue.enqueue(task_name, *args, **kwargs, job_timeout=timeout)
         logger.info(
-            f"Task '{task_name}' enqueued with arguments: {args}, {kwargs} and timeout: {timeout}"
+            "Enqueueing task ‘%s’ (args=%s, kwargs=%s, timeout=%s, ts=%s)",
+            task_name,
+            args,
+            kwargs,
+            timeout,
+            datetime.now(pytz.utc).isoformat(),
         )
+
+        self.queue.enqueue(task_name, *args, **kwargs, job_timeout=timeout)

@@ -9,7 +9,7 @@ class BaseBlueprint(Blueprint):
     def __init__(
         self,
         name,
-        import_name,  # <-- viene de la feature, suele ser __name__
+        import_name,  # typically __name__ of the feature package
         static_folder=None,
         static_url_path=None,
         template_folder=None,
@@ -30,21 +30,21 @@ class BaseBlueprint(Blueprint):
             root_path=root_path,
         )
 
-        # En lugar de peinar /workspace/<app>/features..., resolvemos por el módulo Python:
+        # Resolve feature package directory via Python's module system
         try:
             module = sys.modules.get(import_name) or importlib.import_module(
                 import_name
             )
             pkg_dir = os.path.dirname(module.__file__)
-        except Exception as e:
+        except (ImportError, AttributeError) as e:
             raise RuntimeError(
-                f"No puedo resolver la ruta de paquete para {import_name}: {e}"
+                f"Cannot resolve package path for {import_name}: {e}"
             )
 
-        # Aquí vive tu feature (src/splent_io/splent_feature_xxx)
+        # Root directory of this feature package (src/splent_io/splent_feature_xxx)
         self.feature_code_path = pkg_dir
 
-        # Si no te pasan template_folder, usa el de la feature
+        # Fall back to the feature's own templates/ if none was passed
         if self.template_folder is None:
             self.template_folder = os.path.join(self.feature_code_path, "templates")
 
@@ -60,21 +60,28 @@ class BaseBlueprint(Blueprint):
             )
 
     def send_file(self, subfolder, filename):
-        file_path = os.path.join(self.feature_code_path, "assets", subfolder, filename)
+        allowed_subfolders = {"js", "css", "dist"}
+        if subfolder not in allowed_subfolders:
+            abort(404)
 
-        if filename == "webpack.config.js":
-            abort(403, description="Access to this file is forbidden")
+        base_dir = os.path.realpath(
+            os.path.join(self.feature_code_path, "assets", subfolder)
+        )
+        requested_path = os.path.realpath(os.path.join(base_dir, filename))
 
-        if os.path.exists(file_path) and subfolder in ["js", "css", "dist"]:
-            try:
-                if filename.endswith(".js"):
-                    mimetype = "application/javascript"
-                elif filename.endswith(".css"):
-                    mimetype = "text/css"
-                else:
-                    mimetype = "text/plain"
-                with open(file_path, "r") as f:
-                    return Response(f.read(), mimetype=mimetype)
-            except FileNotFoundError:
-                abort(404, description=f"File not found: {file_path}")
-        abort(404, description=f"Invalid path or file: {subfolder}/{filename}")
+        # Prevent path traversal: resolved path must stay inside base_dir
+        if not requested_path.startswith(base_dir + os.sep) and requested_path != base_dir:
+            abort(403)
+
+        if not os.path.isfile(requested_path):
+            abort(404)
+
+        if filename.endswith(".js"):
+            mimetype = "application/javascript"
+        elif filename.endswith(".css"):
+            mimetype = "text/css"
+        else:
+            mimetype = "text/plain"
+
+        with open(requested_path, "r") as f:
+            return Response(f.read(), mimetype=mimetype)

@@ -1,8 +1,13 @@
+import logging
+
+logger = logging.getLogger(__name__)
+
+
 def build_jinja_context(app, base_context: dict) -> dict:
     """
-    It combines the base context of the core with the variables injected by the features.
+    Combines the base context with variables injected by feature context processors.
     """
-    ctx = dict(base_context)  # copia defensiva
+    ctx = dict(base_context)  # defensive copy — do not mutate the caller's dict
 
     for fn in getattr(app, "context_processors", []):
         try:
@@ -10,8 +15,12 @@ def build_jinja_context(app, base_context: dict) -> dict:
             if isinstance(result, dict):
                 ctx.update(result)
             else:
-                print(f"⚠️ Feature context processor {fn} returned {type(result)}")
+                logger.warning(
+                    "Feature context processor %s returned %s instead of dict",
+                    fn,
+                    type(result),
+                )
         except Exception as e:
-            print(f"⚠️ Error in feature context processor {fn}: {e}")
+            logger.exception("Error in feature context processor %s: %s", fn, e)
 
     return ctx

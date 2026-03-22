@@ -1,11 +1,14 @@
+from typing import Any, Generic, NoReturn, TypeVar
+
+from sqlalchemy import func, select
+
 from splent_framework.db import db
-from typing import Generic, List, NoReturn, Optional, TypeVar, Union
 
 T = TypeVar("T")
 
 
 class BaseRepository(Generic[T]):
-    def __init__(self, model: T):
+    def __init__(self, model: type[T]):
         self.model = model
         self.session = db.session
 
@@ -18,23 +21,20 @@ class BaseRepository(Generic[T]):
             self.session.flush()
         return instance
 
-    def get_by_id(self, id: int) -> Optional[T]:
-        instance: Optional[T] = self.model.query.get(id)
-        return instance
+    def get_by_id(self, id: int) -> T | None:
+        return self.session.get(self.model, id)
 
-    def get_by_column(self, column_name: str, value) -> List[T]:
-        instances: List[T] = (
-            self.session.query(self.model)
-            .filter(getattr(self.model, column_name) == value)
-            .all()
+    def get_by_column(self, column_name: str, value: Any) -> list[T]:
+        stmt = select(self.model).where(
+            getattr(self.model, column_name) == value
         )
-        return instances
+        return list(self.session.scalars(stmt).all())
 
-    def get_or_404(self, id: int) -> Union[T, NoReturn]:
-        return self.model.query.get_or_404(id)
+    def get_or_404(self, id: int) -> T | NoReturn:
+        return db.get_or_404(self.model, id)
 
-    def update(self, id: int, **kwargs) -> Optional[T]:
-        instance: Optional[T] = self.get_by_id(id)
+    def update(self, id: int, **kwargs) -> T | None:
+        instance = self.get_by_id(id)
         if instance:
             for key, value in kwargs.items():
                 setattr(instance, key, value)
@@ -43,22 +43,23 @@ class BaseRepository(Generic[T]):
         return None
 
     def delete(self, id: int) -> bool:
-        instance: Optional[T] = self.get_by_id(id)
+        instance = self.get_by_id(id)
         if instance:
             self.session.delete(instance)
             self.session.commit()
             return True
         return False
 
-    def delete_by_column(self, column_name: str, value) -> bool:
-        instances: List[T] = self.get_by_column(column_name, value)
+    def delete_by_column(self, column_name: str, value: Any) -> bool:
+        instances = self.get_by_column(column_name, value)
         if not instances:
             return False
-
         for instance in instances:
             self.session.delete(instance)
         self.session.commit()
         return True
 
     def count(self) -> int:
-        return self.model.query.count()
+        return self.session.scalar(
+            select(func.count()).select_from(self.model)
+        ) or 0

@@ -1,5 +1,8 @@
 import importlib
+import logging
 import os
+
+logger = logging.getLogger(__name__)
 
 
 class ConfigManager:
@@ -12,7 +15,7 @@ class ConfigManager:
         manager = cls(app)
         manager.load_config(config_name)
 
-    def load_config(self, config_name="development"):
+    def load_config(self, config_name: str = "development") -> None:
         config_name = config_name or os.getenv("FLASK_ENV", "development")
         splent_app = os.getenv("SPLENT_APP", "splent_app")
 
@@ -21,22 +24,20 @@ class ConfigManager:
         except ModuleNotFoundError:
             from splent_framework.configuration import default_config as config_module
 
-            print("⚠️ Using SPLENT default config (no product config.py found)")
+            logger.warning("No product config.py found for '%s', using SPLENT default config.", splent_app)
 
         config_class_name = f"{config_name.capitalize()}Config"
         config_class = getattr(config_module, config_class_name, None)
 
         if config_class is None:
             raise RuntimeError(
-                f"❌ Could not find class '{config_class_name}' in '{splent_app}.config'"
+                f"Could not find class '{config_class_name}' in '{splent_app}.config'"
             )
 
-        # Instanciar para que se ejecute __init__ y se genere bien la config
         config_instance = config_class()
 
-        # Extraer configuración completa, combinando atributos de instancia y clase
+        # Combine instance attributes (set in __init__) with class-level uppercase attrs
         config_data = {k: v for k, v in config_instance.__dict__.items() if k.isupper()}
-
         for k in dir(config_instance):
             if k.isupper() and k not in config_data:
                 config_data[k] = getattr(config_instance, k)

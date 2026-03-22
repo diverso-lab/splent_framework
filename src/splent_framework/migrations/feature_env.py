@@ -33,6 +33,7 @@ from flask import current_app
 from alembic import context
 
 from splent_framework.db import db
+from splent_framework.managers.migration_manager import alembic_version_table
 
 
 def run_feature_migrations(feature_name: str, feature_tables: set[str]) -> None:
@@ -51,7 +52,7 @@ def run_feature_migrations(feature_name: str, feature_tables: set[str]) -> None:
         fileConfig(cfg.config_file_name)
 
     target_metadata = db.metadata
-    version_table = f"alembic_{feature_name}"
+    version_table = alembic_version_table(feature_name)
 
     def include_object(obj, name, type_, reflected, compare_to):
         if type_ == "table":
