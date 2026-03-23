@@ -10,7 +10,6 @@ class SeederError(RuntimeError):
 
 
 class BaseSeeder(ABC):
-    priority = 10
 
     def __init__(self):
         self.db = db
