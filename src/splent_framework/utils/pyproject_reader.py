@@ -81,6 +81,16 @@ class PyprojectReader:
         return self._data.get("project", {}).get("version")
 
     @property
+    def optional_dependencies(self) -> dict[str, list[str]]:
+        """Full contents of [project.optional-dependencies] as {group: [entries]}."""
+        raw = self._data.get("project", {}).get("optional-dependencies", {})
+        return {
+            group: [x.strip() for x in entries if isinstance(x, str) and x.strip()]
+            for group, entries in raw.items()
+            if isinstance(entries, list)
+        }
+
+    @property
     def features(self) -> list[str]:
         """
         Entries from [project.optional-dependencies].features.

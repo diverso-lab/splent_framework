@@ -114,7 +114,7 @@ class FeatureLoadOrderResolver:
 
         Handles lines such as::
 
-            auth {org 'splent-io', package 'splent_feature_auth', version 'v1_0_0'}
+            auth {org 'splent-io', package 'splent_feature_auth', version 'v1.0.0'}
         """
         mapping: dict[str, str] = {}
         for line in uvl_text.splitlines():

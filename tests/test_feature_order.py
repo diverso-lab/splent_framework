@@ -25,17 +25,17 @@ SAMPLE_UVL = """\
 features
 \tsample_splent_app
 \t\tmandatory
-\t\t\tauth {org 'splent-io', package 'splent_feature_auth', version 'v1_0_0'}
+\t\t\tauth {org 'splent-io', package 'splent_feature_auth'}
 \t\tmandatory
-\t\t\tpublic {org 'splent-io', package 'splent_feature_public', version 'v1_0_0'}
+\t\t\tpublic {org 'splent-io', package 'splent_feature_public'}
 \t\toptional
-\t\t\tmail {org 'splent-io', package 'splent_feature_mail', version 'v1_0_0'}
+\t\t\tmail {org 'splent-io', package 'splent_feature_mail'}
 \t\toptional
-\t\t\tconfirmemail {org 'splent-io', package 'splent_feature_confirmemail', version 'v1_0_0'}
+\t\t\tconfirmemail {org 'splent-io', package 'splent_feature_confirmemail'}
 \t\toptional
-\t\t\tprofile {org 'splent-io', package 'splent_feature_profile', version 'v1_0_0'}
+\t\t\tprofile {org 'splent-io', package 'splent_feature_profile'}
 \t\toptional
-\t\t\treset {org 'splent-io', package 'splent_feature_reset', version 'v1_0_0'}
+\t\t\treset {org 'splent-io', package 'splent_feature_reset'}
 constraints
 \tprofile => auth
 \tconfirmemail => mail
