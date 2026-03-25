@@ -98,10 +98,32 @@ class MigrationManager:
         Return the absolute path to the feature's ``migrations/`` directory, or
         ``None`` if the package cannot be resolved.
 
-        Works with versioned names (``splent_feature_auth@v1.0.0``) by stripping
-        the version suffix before the import lookup.
+        Resolution order:
+          1. Filesystem lookup via product features/ symlinks (works everywhere).
+          2. Fallback to importlib (for editable/pip-installed features).
         """
         base_name = feature_name.split("@")[0]
+        if "/" in base_name:
+            base_name = base_name.split("/")[-1]
+
+        # 1. Filesystem lookup via features/ directory
+        from splent_framework.utils.path_utils import PathUtils
+        features_base = os.path.join(PathUtils.get_app_base_dir(), "features")
+        if os.path.isdir(features_base):
+            for org_dir in os.listdir(features_base):
+                org_path = os.path.join(features_base, org_dir)
+                if not os.path.isdir(org_path):
+                    continue
+                for entry in os.listdir(org_path):
+                    entry_name = entry.split("@")[0]
+                    if entry_name == base_name:
+                        mdir = os.path.join(
+                            org_path, entry, "src", org_dir, base_name, "migrations"
+                        )
+                        if os.path.isdir(mdir):
+                            return os.path.abspath(mdir)
+
+        # 2. Fallback to importlib
         try:
             spec = importlib.util.find_spec(f"splent_io.{base_name}")
             if spec and spec.origin:
@@ -115,12 +137,48 @@ class MigrationManager:
         """
         Return ``{feature_name: migrations_dir}`` for every feature declared in
         the product's pyproject.toml that has a ``migrations/`` directory on disk.
+
+        The dict is ordered according to the UVL dependency constraints so that
+        features are migrated after their dependencies (e.g. auth before profile).
         """
-        from splent_framework.utils.feature_utils import get_features_from_pyproject
+        from splent_framework.utils.path_utils import PathUtils
+        from splent_framework.utils.pyproject_reader import PyprojectReader
+        from splent_framework.managers.feature_order import FeatureLoadOrderResolver
+        from splent_framework.managers.feature_loader import FeatureEntryParser
+
+        splent_app = os.getenv("SPLENT_APP")
+        if not splent_app:
+            return {}
+
+        product_dir = os.path.join(PathUtils.get_working_dir(), splent_app)
+
+        try:
+            reader = PyprojectReader.for_product(product_dir)
+            features_raw = reader.features
+        except (FileNotFoundError, RuntimeError):
+            return {}
+
+        if not features_raw:
+            return {}
+
+        # Resolve UVL-based load order
+        uvl_file = None
+        try:
+            uvl_cfg = reader.uvl_config
+            if uvl_cfg.get("file"):
+                uvl_file = os.path.join(product_dir, "uvl", uvl_cfg["file"])
+        except (RuntimeError, KeyError):
+            pass
+
+        parser = FeatureEntryParser()
+        resolver = FeatureLoadOrderResolver(parser)
+        ordered = resolver.resolve(features_raw, uvl_file)
 
         result: dict[str, str] = {}
-        for spec in get_features_from_pyproject() or []:
-            name = spec.split("@")[0]
+        for entry in ordered:
+            name = entry.split("@")[0]
+            if "/" in name:
+                name = name.split("/")[-1]
             mdir = MigrationManager.get_feature_migration_dir(name)
             if mdir and os.path.isdir(mdir):
                 result[name] = mdir

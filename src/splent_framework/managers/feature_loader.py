@@ -105,14 +105,18 @@ class FeatureLinkResolver:
     """
 
     def resolve(self, features_dir: str, ref: FeatureRef) -> str:
-        """Return the resolved real path to the feature directory.
+        """Return the resolved path to the feature directory.
+
+        Uses os.path.abspath instead of os.path.realpath so that relative
+        symlinks resolve within the current filesystem (e.g. inside a Docker
+        container) rather than expanding to the host absolute path.
 
         Raises FeatureError if no matching path exists.
         """
         link_path = self._expected_path(features_dir, ref)
         if not os.path.exists(link_path):
             link_path = self._fallback_path(features_dir, ref, link_path)
-        return os.path.realpath(link_path)
+        return os.path.abspath(link_path)
 
     # ------------------------------------------------------------------
 
