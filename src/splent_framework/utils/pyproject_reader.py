@@ -90,25 +90,53 @@ class PyprojectReader:
             if isinstance(entries, list)
         }
 
-    @property
-    def features(self) -> list[str]:
-        """
-        Entries from [project.optional-dependencies].features.
-        Returns an empty list if the key is absent.
-        Raises ValueError if the value is present but is not a list.
-        """
-        raw = (
-            self._data
-            .get("project", {})
-            .get("optional-dependencies", {})
-            .get("features", [])
-        )
+    def _read_feature_list(self, key: str) -> list[str]:
+        """Read a feature list from [tool.splent.<key>], with legacy fallback for base key."""
+        raw = self._data.get("tool", {}).get("splent", {}).get(key)
+        if raw is None and key == "features":
+            raw = (
+                self._data
+                .get("project", {})
+                .get("optional-dependencies", {})
+                .get("features", [])
+            )
+        if raw is None:
+            return []
         if not isinstance(raw, list):
             raise ValueError(
-                f"[project.optional-dependencies.features] in {self._path} "
-                f"must be a list, got {type(raw).__name__}"
+                f"[tool.splent.{key}] in {self._path} must be a list, got {type(raw).__name__}"
             )
         return [x.strip() for x in raw if isinstance(x, str) and x.strip()]
+
+    @property
+    def features(self) -> list[str]:
+        """Base feature entries from ``[tool.splent.features]`` (always active)."""
+        return self._read_feature_list("features")
+
+    @property
+    def features_dev(self) -> list[str]:
+        """Dev-only feature entries from ``[tool.splent.features_dev]``."""
+        return self._read_feature_list("features_dev")
+
+    @property
+    def features_prod(self) -> list[str]:
+        """Prod-only feature entries from ``[tool.splent.features_prod]``."""
+        return self._read_feature_list("features_prod")
+
+    def features_for_env(self, env: str | None = None) -> list[str]:
+        """Return merged feature list: base + env-specific (deduplicated).
+
+        Args:
+            env: ``"dev"``, ``"prod"``, or ``None`` (base only).
+        """
+        base = list(self.features)
+        if env:
+            seen = set(base)
+            for f in self._read_feature_list(f"features_{env}"):
+                if f not in seen:
+                    base.append(f)
+                    seen.add(f)
+        return base
 
     # ── [tool.splent] ─────────────────────────────────────────────────────
 

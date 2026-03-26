@@ -154,7 +154,8 @@ class MigrationManager:
 
         try:
             reader = PyprojectReader.for_product(product_dir)
-            features_raw = reader.features
+            env = os.getenv("SPLENT_ENV")
+            features_raw = reader.features_for_env(env)
         except (FileNotFoundError, RuntimeError):
             return {}
 

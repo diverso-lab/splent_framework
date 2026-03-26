@@ -14,6 +14,7 @@ class ConfigManager:
         """Factory method to initialize and load configuration."""
         manager = cls(app)
         manager.load_config(config_name)
+        return manager
 
     def load_config(self, config_name: str = "development") -> None:
         config_name = config_name or os.getenv("FLASK_ENV", "development")

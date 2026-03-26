@@ -69,6 +69,17 @@ class FeatureManager:
         for entry in ordered:
             loader.load(self._parser.parse(entry))
 
+            # Advance lifecycle state to "active"
+            try:
+                from splent_cli.utils.lifecycle import advance_state, resolve_feature_key_from_entry
+                key, ns, name, version = resolve_feature_key_from_entry(entry)
+                advance_state(
+                    product_dir, splent_app, key,
+                    to="active", namespace=ns, name=name, version=version,
+                )
+            except Exception:
+                pass  # CLI may not be installed (e.g. production without dev deps)
+
     def get_features(self) -> list[str]:
         """Return the raw feature entries from the active product's pyproject.toml."""
         splent_app = self._require_splent_app()
@@ -87,7 +98,8 @@ class FeatureManager:
 
     def _read_features(self, product_dir: str) -> list[str]:
         try:
-            return PyprojectReader.for_product(product_dir).features
+            env = os.getenv("SPLENT_ENV")
+            return PyprojectReader.for_product(product_dir).features_for_env(env)
         except FileNotFoundError as e:
             raise FeatureError(str(e)) from e
         except (RuntimeError, ValueError) as e:
