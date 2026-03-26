@@ -14,10 +14,10 @@ logger = logging.getLogger(__name__)
 class NamespaceManager:
     @staticmethod
     def init_app(app=None):
-        """Register namespace packages for all organizations under .splent_cache/features."""
-        base_cache_dir = os.path.join(
-            PathUtils.get_working_dir(), ".splent_cache", "features"
-        )
+        """Register namespace packages for all organizations under .splent_cache/features
+        and for editable features at the workspace root."""
+        working_dir = PathUtils.get_working_dir()
+        base_cache_dir = os.path.join(working_dir, ".splent_cache", "features")
 
         if not os.path.exists(base_cache_dir):
             logger.warning("No feature cache found at %s", base_cache_dir)
@@ -30,6 +30,7 @@ class NamespaceManager:
 
         NamespaceManager._ensure_init_files(orgs, base_cache_dir)
         NamespaceManager._add_to_syspath(base_cache_dir)
+        NamespaceManager._add_workspace_root_features(working_dir)
         NamespaceManager._import_namespaces(orgs)
 
     # ------------------------------------------------------------------
@@ -61,6 +62,22 @@ class NamespaceManager:
         for src in glob.glob(os.path.join(base_cache_dir, "*", "*", "src")):
             if src not in sys.path:
                 sys.path.insert(0, src)
+
+    @staticmethod
+    def _add_workspace_root_features(working_dir: str) -> None:
+        """Add src/ directories of editable features at the workspace root to sys.path.
+
+        Editable features live at {workspace}/{feature_name}/ with an internal
+        src/ directory.  Only directories matching the splent_feature_* naming
+        convention are considered.
+        """
+        for entry in os.listdir(working_dir):
+            if not entry.startswith("splent_feature_"):
+                continue
+            src = os.path.join(working_dir, entry, "src")
+            if os.path.isdir(src) and src not in sys.path:
+                sys.path.insert(0, src)
+                logger.debug("Workspace root feature src added: %s", src)
 
     @staticmethod
     def _import_namespaces(orgs: list[str]) -> None:
