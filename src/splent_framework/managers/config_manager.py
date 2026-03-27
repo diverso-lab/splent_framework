@@ -25,7 +25,10 @@ class ConfigManager:
         except ModuleNotFoundError:
             from splent_framework.configuration import default_config as config_module
 
-            logger.warning("No product config.py found for '%s', using SPLENT default config.", splent_app)
+            logger.warning(
+                "No product config.py found for '%s', using SPLENT default config.",
+                splent_app,
+            )
 
         config_class_name = f"{config_name.capitalize()}Config"
         config_class = getattr(config_module, config_class_name, None)

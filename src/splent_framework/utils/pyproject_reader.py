@@ -95,8 +95,7 @@ class PyprojectReader:
         raw = self._data.get("tool", {}).get("splent", {}).get(key)
         if raw is None and key == "features":
             raw = (
-                self._data
-                .get("project", {})
+                self._data.get("project", {})
                 .get("optional-dependencies", {})
                 .get("features", [])
             )

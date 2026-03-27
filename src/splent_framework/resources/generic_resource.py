@@ -29,9 +29,7 @@ class GenericResource(Resource):
     def _serialize(self, item) -> dict:
         if self._serializer:
             return self._serializer.serialize(item)
-        fields = self._allowed_fields or [
-            c.name for c in self.model.__table__.columns
-        ]
+        fields = self._allowed_fields or [c.name for c in self.model.__table__.columns]
         return {f: getattr(item, f, None) for f in fields}
 
     def get(self, id: int | None = None) -> tuple:
@@ -52,12 +50,19 @@ class GenericResource(Resource):
         if self._allowed_fields:
             data = {k: v for k, v in data.items() if k in self._allowed_fields}
         elif self._serializer and self._serializer.serialization_fields:
-            data = {k: v for k, v in data.items() if k in self._serializer.serialization_fields}
+            data = {
+                k: v
+                for k, v in data.items()
+                if k in self._serializer.serialization_fields
+            }
 
         item = self.model(**data)
         db.session.add(item)
         db.session.commit()
-        return {"message": f"{self.model_name} created successfully", "id": item.id}, 201
+        return {
+            "message": f"{self.model_name} created successfully",
+            "id": item.id,
+        }, 201
 
     def put(self, id: int) -> tuple:
         item = db.session.get(self.model, id)
@@ -69,7 +74,11 @@ class GenericResource(Resource):
             return {"message": "No input data provided"}, 400
 
         allowed = self._allowed_fields
-        if allowed is None and self._serializer and self._serializer.serialization_fields:
+        if (
+            allowed is None
+            and self._serializer
+            and self._serializer.serialization_fields
+        ):
             allowed = list(self._serializer.serialization_fields)
 
         for key, value in data.items():
@@ -89,6 +98,7 @@ class GenericResource(Resource):
 
 def create_resource(model: type, serialization_fields: list[str] | None = None) -> type:
     """Factory that returns a GenericResource subclass for a given model."""
+
     class ConcreteResource(GenericResource):
         def __init__(self):
             super().__init__(model, serialization_fields)

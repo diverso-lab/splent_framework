@@ -152,7 +152,7 @@ class FeatureLoadOrderResolver:
     def _topological_sort(
         self,
         features_raw: list[str],
-        package_map: dict[str, str],   # {short_name → package_name}
+        package_map: dict[str, str],  # {short_name → package_name}
         constraints: list[tuple[str, str]],  # [(requirer_short, required_short)]
     ) -> list[str]:
         """Stable Kahn topological sort over *features_raw*.
@@ -199,9 +199,7 @@ class FeatureLoadOrderResolver:
 
         # Min-heap keyed by original pyproject index → stable ordering.
         heap: list[tuple[int, str]] = [
-            (pkg_to_index[pkg], pkg)
-            for pkg, deg in in_degree.items()
-            if deg == 0
+            (pkg_to_index[pkg], pkg) for pkg, deg in in_degree.items() if deg == 0
         ]
         heapq.heapify(heap)
 

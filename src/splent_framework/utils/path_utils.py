@@ -58,7 +58,9 @@ class PathUtils:
             return os.path.join(working_dir, splent_app, uploads_folder_name())
 
         if not splent_app:
-            raise FileNotFoundError("SPLENT_APP not set — cannot resolve uploads directory.")
+            raise FileNotFoundError(
+                "SPLENT_APP not set — cannot resolve uploads directory."
+            )
 
         try:
             package = importlib.util.find_spec(splent_app)
@@ -68,4 +70,6 @@ class PathUtils:
         if package and package.origin:
             return os.path.join(os.path.dirname(package.origin), uploads_folder_name())
 
-        raise FileNotFoundError(f"Could not resolve uploads directory for '{splent_app}'.")
+        raise FileNotFoundError(
+            f"Could not resolve uploads directory for '{splent_app}'."
+        )

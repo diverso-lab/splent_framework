@@ -25,9 +25,7 @@ class BaseRepository(Generic[T]):
         return self.session.get(self.model, id)
 
     def get_by_column(self, column_name: str, value: Any) -> list[T]:
-        stmt = select(self.model).where(
-            getattr(self.model, column_name) == value
-        )
+        stmt = select(self.model).where(getattr(self.model, column_name) == value)
         return list(self.session.scalars(stmt).all())
 
     def get_or_404(self, id: int) -> T | NoReturn:
@@ -60,6 +58,4 @@ class BaseRepository(Generic[T]):
         return True
 
     def count(self) -> int:
-        return self.session.scalar(
-            select(func.count()).select_from(self.model)
-        ) or 0
+        return self.session.scalar(select(func.count()).select_from(self.model)) or 0

@@ -108,6 +108,7 @@ class MigrationManager:
 
         # 1. Filesystem lookup via features/ directory
         from splent_framework.utils.path_utils import PathUtils
+
         features_base = os.path.join(PathUtils.get_app_base_dir(), "features")
         if os.path.isdir(features_base):
             for org_dir in os.listdir(features_base):
@@ -203,7 +204,10 @@ class MigrationManager:
                 return row[0] if row else None
         except sa_exc.SQLAlchemyError:
             # Table may not exist yet (feature not yet migrated) — this is expected
-            logger.debug("No revision found for feature '%s' (table may not exist yet)", feature_name)
+            logger.debug(
+                "No revision found for feature '%s' (table may not exist yet)",
+                feature_name,
+            )
             return None
 
     @staticmethod

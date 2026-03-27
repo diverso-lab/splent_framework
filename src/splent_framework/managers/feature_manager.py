@@ -71,11 +71,20 @@ class FeatureManager:
 
             # Advance lifecycle state to "active"
             try:
-                from splent_cli.utils.lifecycle import advance_state, resolve_feature_key_from_entry
+                from splent_cli.utils.lifecycle import (
+                    advance_state,
+                    resolve_feature_key_from_entry,
+                )
+
                 key, ns, name, version = resolve_feature_key_from_entry(entry)
                 advance_state(
-                    product_dir, splent_app, key,
-                    to="active", namespace=ns, name=name, version=version,
+                    product_dir,
+                    splent_app,
+                    key,
+                    to="active",
+                    namespace=ns,
+                    name=name,
+                    version=version,
                 )
             except Exception:
                 pass  # CLI may not be installed (e.g. production without dev deps)

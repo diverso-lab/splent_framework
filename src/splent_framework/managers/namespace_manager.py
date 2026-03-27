@@ -88,4 +88,6 @@ class NamespaceManager:
                 importlib.import_module(org)
                 logger.debug("Namespace '%s' registered.", org)
             except (ImportError, ModuleNotFoundError) as e:
-                logger.error("Failed to import namespace '%s': %s", org, e, exc_info=True)
+                logger.error(
+                    "Failed to import namespace '%s': %s", org, e, exc_info=True
+                )

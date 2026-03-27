@@ -37,9 +37,7 @@ class BaseBlueprint(Blueprint):
             )
             pkg_dir = os.path.dirname(module.__file__)
         except (ImportError, AttributeError) as e:
-            raise RuntimeError(
-                f"Cannot resolve package path for {import_name}: {e}"
-            )
+            raise RuntimeError(f"Cannot resolve package path for {import_name}: {e}")
 
         # Root directory of this feature package (src/splent_io/splent_feature_xxx)
         self.feature_code_path = pkg_dir
@@ -70,7 +68,10 @@ class BaseBlueprint(Blueprint):
         requested_path = os.path.realpath(os.path.join(base_dir, filename))
 
         # Prevent path traversal: resolved path must stay inside base_dir
-        if not requested_path.startswith(base_dir + os.sep) and requested_path != base_dir:
+        if (
+            not requested_path.startswith(base_dir + os.sep)
+            and requested_path != base_dir
+        ):
             abort(403)
 
         if not os.path.isfile(requested_path):

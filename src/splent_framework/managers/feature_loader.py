@@ -35,6 +35,7 @@ FEATURE_SUBMODULES = ("routes", "models", "hooks")
 # Domain exception
 # ---------------------------------------------------------------------------
 
+
 class FeatureError(RuntimeError):
     """Raised when any stage of feature loading fails."""
 
@@ -43,13 +44,14 @@ class FeatureError(RuntimeError):
 # Value object
 # ---------------------------------------------------------------------------
 
+
 @dataclass(frozen=True)
 class FeatureRef:
     """Immutable reference to a feature package."""
 
-    org: str          # original org slug        (e.g. "splent-io")
-    org_safe: str     # Python-safe org namespace (e.g. "splent_io")
-    name: str         # feature package name      (e.g. "splent_feature_auth")
+    org: str  # original org slug        (e.g. "splent-io")
+    org_safe: str  # Python-safe org namespace (e.g. "splent_io")
+    name: str  # feature package name      (e.g. "splent_feature_auth")
     version: str | None  # declared version       (e.g. "v1.0.0"), or None if absent
 
     def import_name(self) -> str:
@@ -60,6 +62,7 @@ class FeatureRef:
 # ---------------------------------------------------------------------------
 # SRP: parse raw entry strings
 # ---------------------------------------------------------------------------
+
 
 class FeatureEntryParser:
     """Parse raw feature entry strings into FeatureRef instances.
@@ -97,6 +100,7 @@ class FeatureEntryParser:
 # ---------------------------------------------------------------------------
 # SRP: locate the feature directory on the filesystem
 # ---------------------------------------------------------------------------
+
 
 class FeatureLinkResolver:
     """Locate the symlink (or plain directory) for a feature on the filesystem.
@@ -143,6 +147,7 @@ class FeatureLinkResolver:
 # SRP: validate internal directory structure
 # ---------------------------------------------------------------------------
 
+
 class FeatureStructureValidator:
     """Validate that a resolved feature directory has the expected layout.
 
@@ -176,6 +181,7 @@ class FeatureStructureValidator:
 # ---------------------------------------------------------------------------
 # SRP: importlib operations
 # ---------------------------------------------------------------------------
+
 
 class FeatureImporter:
     """Handle all importlib operations for a feature package."""
@@ -218,6 +224,7 @@ class FeatureImporter:
 # ---------------------------------------------------------------------------
 # SRP: Flask integration hooks
 # ---------------------------------------------------------------------------
+
 
 class FeatureIntegrator:
     """Run Flask integration hooks for a loaded feature module.
@@ -280,7 +287,9 @@ class FeatureIntegrator:
             if self._strict:
                 raise FeatureError(f"No blueprints found in {import_name}")
 
-    def _collect_candidate_modules(self, module: types.ModuleType, import_name: str) -> list[types.ModuleType]:
+    def _collect_candidate_modules(
+        self, module: types.ModuleType, import_name: str
+    ) -> list[types.ModuleType]:
         """Return the feature root module plus any already-imported submodules."""
         return [module] + [
             sys.modules[f"{import_name}.{sub}"]
@@ -320,6 +329,7 @@ class FeatureIntegrator:
 # ---------------------------------------------------------------------------
 # Orchestrator: load a single feature (DIP — collaborators injected)
 # ---------------------------------------------------------------------------
+
 
 class FeatureLoader:
     """Orchestrate the full loading pipeline for a single FeatureRef.
