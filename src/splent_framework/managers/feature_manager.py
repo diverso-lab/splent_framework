@@ -266,12 +266,29 @@ class FeatureManager:
             raise FeatureError(f"Failed to parse features: {e}") from e
 
     def _resolve_uvl_path(self, product_dir: str) -> str | None:
-        """Return the absolute path to the product's UVL file, or None."""
+        """Return the absolute path to the UVL file, or None.
+
+        Resolution order:
+          1. SPL catalog: [tool.splent].spl → workspace/splent_catalog/{spl}/{spl}.uvl
+          2. Legacy: [tool.splent.uvl].file → product_dir/uvl/{file}
+        """
         try:
-            uvl_cfg = PyprojectReader.for_product(product_dir).uvl_config
+            reader = PyprojectReader.for_product(product_dir)
         except (FileNotFoundError, RuntimeError):
             return None
-        uvl_file = uvl_cfg.get("file")
+
+        # 1. Catalog resolution: [tool.splent].spl
+        spl_name = reader.splent_config.get("spl")
+        if spl_name:
+            workspace = PathUtils.get_working_dir()
+            catalog_uvl = os.path.join(
+                workspace, "splent_catalog", spl_name, f"{spl_name}.uvl"
+            )
+            if os.path.isfile(catalog_uvl):
+                return catalog_uvl
+
+        # 2. Legacy: [tool.splent.uvl].file inside product
+        uvl_file = reader.uvl_config.get("file")
         if not uvl_file:
             return None
         return os.path.join(product_dir, "uvl", uvl_file)
