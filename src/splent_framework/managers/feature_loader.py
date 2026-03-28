@@ -232,20 +232,73 @@ class FeatureIntegrator:
     Responsibilities (in order):
       1. Inject feature configuration via ``<feature>.config.inject_config(app)``
       2. Call ``<feature>.init_feature(app)`` if present
-      3. Register all Flask Blueprints found in the feature modules
+      3. Apply service overrides from the RefinementRegistry
+      4. Register all Flask Blueprints found in the feature modules
     """
 
-    def __init__(self, app, strict: bool = True) -> None:
+    def __init__(self, app, strict: bool = True, registry=None) -> None:
         self._app = app
         self._strict = strict
+        self._registry = registry
 
     def integrate(self, module, import_name: str) -> None:
         """Run all integration steps for the given feature module."""
         self._inject_config(import_name)
+        self._apply_model_extensions(import_name)
         self._call_init(module, import_name)
+        self._apply_service_overrides(import_name)
         self._register_blueprints(module, import_name)
 
     # ------------------------------------------------------------------
+
+    def _apply_model_extensions(self, import_name: str) -> None:
+        """Apply model mixins declared by refinement features targeting this feature."""
+        if not self._registry:
+            return
+
+        feature_name = import_name.rsplit(".", 1)[-1]
+        overrides = self._registry.get_overrides(feature_name, "model")
+        if not overrides:
+            return
+
+        from splent_framework.refinement.model_extender import apply_model_mixin
+
+        for entry in overrides:
+            # Import the mixin from the refiner's module
+            refiner_org = "splent_io"  # convention
+            mixin_module_name = f"{refiner_org}.{entry.refiner}.models"
+            try:
+                import importlib
+
+                mod = importlib.import_module(mixin_module_name)
+                mixin_cls = getattr(mod, entry.replacement)
+                apply_model_mixin(entry.target, mixin_cls)
+            except (ImportError, AttributeError) as e:
+                logger.warning(
+                    "Cannot apply model mixin %s from %s: %s",
+                    entry.replacement, entry.refiner, e,
+                )
+
+    def _apply_service_overrides(self, import_name: str) -> None:
+        """Log service overrides applied by this feature (if it's a refiner).
+
+        The actual override happens naturally: the refiner's init_feature()
+        calls register_service() with the same key, overwriting the base.
+        Load order (UVL) guarantees the refiner runs after the base.
+        """
+        if not self._registry:
+            return
+
+        feature_name = import_name.rsplit(".", 1)[-1]
+        if not self._registry.is_refiner(feature_name):
+            return
+
+        for entry in self._registry.all_entries():
+            if entry.refiner == feature_name and entry.category == "service":
+                logger.info(
+                    "Service override: %s.%s → %s (by %s)",
+                    entry.base, entry.target, entry.replacement, entry.refiner,
+                )
 
     def _inject_config(self, import_name: str) -> None:
         try:

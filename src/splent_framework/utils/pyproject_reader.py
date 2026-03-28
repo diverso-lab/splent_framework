@@ -149,6 +149,21 @@ class PyprojectReader:
         """Contents of [tool.splent.uvl] (mirror, doi, file, …)."""
         return self.splent_config.get("uvl", {})
 
+    @property
+    def contract(self) -> dict:
+        """Contents of [tool.splent.contract]."""
+        return self.splent_config.get("contract", {})
+
+    @property
+    def extensible_contract(self) -> dict:
+        """Contents of [tool.splent.contract.extensible] — what can be overridden."""
+        return self.contract.get("extensible", {})
+
+    @property
+    def refinement_config(self) -> dict:
+        """Contents of [tool.splent.refinement] — what this feature overrides."""
+        return self.splent_config.get("refinement", {})
+
     # ── helpers ───────────────────────────────────────────────────────────
 
     @property

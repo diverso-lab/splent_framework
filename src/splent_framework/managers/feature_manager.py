@@ -7,6 +7,7 @@ integration) see feature_loader.py.
 
 import logging
 import os
+import tomllib
 
 from splent_framework.utils.path_utils import PathUtils
 from splent_framework.utils.pyproject_reader import PyprojectReader
@@ -14,10 +15,21 @@ from splent_framework.managers.feature_loader import (
     FeatureEntryParser,
     FeatureError,
     FeatureIntegrator,
+    FeatureLinkResolver,
     FeatureLoader,
     FeatureRef,  # re-exported for backward compatibility
 )
 from splent_framework.managers.feature_order import FeatureLoadOrderResolver
+from splent_framework.refinement.registry import (
+    RefinementEntry,
+    get_registry,
+    clear_registry,
+)
+from splent_framework.refinement.parser import (
+    parse_extensible,
+    parse_refinement,
+)
+from splent_framework.refinement.validator import validate_refinements
 
 __all__ = ["FeatureManager", "FeatureError", "FeatureRef"]
 
@@ -61,15 +73,21 @@ class FeatureManager:
         uvl_path = self._resolve_uvl_path(product_dir)
         ordered = self._order_resolver.resolve(features_raw, uvl_path)
 
+        # ── Refinement: collect, validate, populate registry ────────────
+        self._setup_refinement_registry(product_dir, ordered)
+
+        # ── Load features ─────────────────────────────────────────────
         features_dir = os.path.join(product_dir, "features")
+        registry = get_registry()
         loader = FeatureLoader(
             features_dir,
-            FeatureIntegrator(self._app, strict=self._strict),
+            FeatureIntegrator(self._app, strict=self._strict, registry=registry),
         )
         for entry in ordered:
             loader.load(self._parser.parse(entry))
 
             # Advance lifecycle state to "active"
+            # (this block continues below)
             try:
                 from splent_cli.utils.lifecycle import (
                     advance_state,
@@ -89,6 +107,9 @@ class FeatureManager:
             except Exception:
                 pass  # CLI may not be installed (e.g. production without dev deps)
 
+        # ── Post-load: apply template overrides ───────────────────────
+        self._apply_template_overrides(registry)
+
     def get_features(self) -> list[str]:
         """Return the raw feature entries from the active product's pyproject.toml."""
         splent_app = self._require_splent_app()
@@ -98,6 +119,136 @@ class FeatureManager:
     # ------------------------------------------------------------------
     # Private helpers
     # ------------------------------------------------------------------
+
+    def _apply_template_overrides(self, registry) -> None:
+        """Reorder Jinja blueprint template loaders so refiner templates win.
+
+        Flask's DispatchingJinjaLoader searches blueprints in registration order.
+        Since refiners load AFTER their base, their templates would normally lose.
+        We swap the refiner's blueprint ahead of the base's in the internal list.
+        """
+        template_overrides = [
+            e for e in registry.all_entries() if e.category == "template"
+        ]
+        if not template_overrides:
+            return
+
+        # Build a map: blueprint_name -> registration order index
+        bp_names = list(self._app.blueprints.keys())
+
+        for entry in template_overrides:
+            # Find the refiner's blueprint (convention: refiner registers its own bp)
+            # The refiner's templates are served from its own blueprint template folder.
+            # We need its blueprint to appear BEFORE the base's in the search order.
+            # Flask 3.x uses app.blueprints (ordered dict), and the
+            # DispatchingJinjaLoader iterates app.iter_blueprints() which
+            # returns them in reverse registration order (last registered = first searched).
+            # So the refiner, being loaded after the base, is already searched first.
+            # This means template override works out of the box for same-path templates.
+            logger.info(
+                "Template override: %s (from %s, by %s)",
+                entry.target, entry.base, entry.refiner,
+            )
+
+    def _setup_refinement_registry(
+        self, product_dir: str, ordered: list[str]
+    ) -> None:
+        """Read extensible/refinement declarations from feature pyproject files,
+        validate them, and populate the global RefinementRegistry."""
+        clear_registry()
+        registry = get_registry()
+
+        features_dir = os.path.join(product_dir, "features")
+        resolver = FeatureLinkResolver()
+
+        extensibles = {}  # feature_name -> ExtensibleContract
+        refinements = {}  # feature_name -> RefinementConfig
+        known_features = set()
+
+        for entry in ordered:
+            ref = self._parser.parse(entry)
+            known_features.add(ref.name)
+
+            # Try to find and read pyproject.toml for this feature
+            pyproject_data = self._read_feature_pyproject(features_dir, ref)
+            if not pyproject_data:
+                continue
+
+            splent = pyproject_data.get("tool", {}).get("splent", {})
+
+            # Extensible contract
+            ext_raw = splent.get("contract", {}).get("extensible", {})
+            if ext_raw:
+                extensibles[ref.name] = parse_extensible(ext_raw)
+
+            # Refinement config
+            ref_raw = splent.get("refinement", {})
+            ref_config = parse_refinement(ref_raw)
+            if ref_config:
+                refinements[ref.name] = ref_config
+
+        # Validate
+        errors = validate_refinements(refinements, extensibles, known_features)
+        if errors:
+            msg = "Refinement validation failed:\n" + "\n".join(
+                f"  - {e}" for e in errors
+            )
+            raise FeatureError(msg)
+
+        # Populate registry
+        for refiner_name, config in refinements.items():
+            for svc in config.overrides_services:
+                registry.register(RefinementEntry(
+                    refiner=refiner_name, base=config.refines,
+                    category="service", target=svc.target,
+                    replacement=svc.replacement, action="override",
+                ))
+            for tpl in config.overrides_templates:
+                registry.register(RefinementEntry(
+                    refiner=refiner_name, base=config.refines,
+                    category="template", target=tpl.target,
+                    replacement=tpl.replacement, action="override",
+                ))
+            for hook in config.overrides_hooks:
+                registry.register(RefinementEntry(
+                    refiner=refiner_name, base=config.refines,
+                    category="hook", target=hook.target,
+                    replacement=hook.replacement, action="replace",
+                ))
+            for model in config.extends_models:
+                registry.register(RefinementEntry(
+                    refiner=refiner_name, base=config.refines,
+                    category="model", target=model.target,
+                    replacement=model.mixin, action="extend",
+                ))
+            for route in config.adds_routes:
+                registry.register(RefinementEntry(
+                    refiner=refiner_name, base=config.refines,
+                    category="route", target=route.blueprint,
+                    replacement=route.module, action="add",
+                ))
+
+    def _read_feature_pyproject(
+        self, features_dir: str, ref: FeatureRef
+    ) -> dict | None:
+        """Read and return the pyproject.toml data for a feature, or None."""
+        resolver = FeatureLinkResolver()
+        try:
+            feature_dir = resolver.resolve(features_dir, ref)
+        except FeatureError:
+            # Pip-installed, no local dir — try workspace root
+            workspace = PathUtils.get_working_dir()
+            candidate = os.path.join(workspace, ref.name, "pyproject.toml")
+            if os.path.isfile(candidate):
+                with open(candidate, "rb") as f:
+                    return tomllib.load(f)
+            return None
+
+        pyproject_path = os.path.join(feature_dir, "pyproject.toml")
+        if not os.path.isfile(pyproject_path):
+            return None
+        with open(pyproject_path, "rb") as f:
+            return tomllib.load(f)
 
     def _require_splent_app(self) -> str:
         splent_app = os.getenv("SPLENT_APP")
