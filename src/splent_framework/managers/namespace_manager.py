@@ -14,23 +14,31 @@ logger = logging.getLogger(__name__)
 class NamespaceManager:
     @staticmethod
     def init_app(app=None):
-        """Register namespace packages for all organizations under .splent_cache/features
-        and for editable features at the workspace root."""
+        """Register namespace packages for all organizations.
+
+        In development: scans .splent_cache/features and workspace root.
+        In production: features are pip-installed, so we just ensure
+        the namespace packages are importable.
+        """
         working_dir = PathUtils.get_working_dir()
         base_cache_dir = os.path.join(working_dir, ".splent_cache", "features")
 
-        if not os.path.exists(base_cache_dir):
-            logger.warning("No feature cache found at %s", base_cache_dir)
-            return
+        orgs: list[str] = []
 
-        orgs = NamespaceManager._detect_orgs(base_cache_dir)
+        if os.path.exists(base_cache_dir):
+            # Development: resolve from cache + workspace root
+            orgs = NamespaceManager._detect_orgs(base_cache_dir)
+            if orgs:
+                NamespaceManager._ensure_init_files(orgs, base_cache_dir)
+                NamespaceManager._add_to_syspath(base_cache_dir)
+            NamespaceManager._add_workspace_root_features(working_dir)
+
+        # Always try to import known namespace packages.
+        # In production, pip-installed features make splent_io available
+        # without any cache or workspace root directories.
         if not orgs:
-            logger.warning("No org namespaces found under .splent_cache/features/")
-            return
+            orgs = ["splent_io"]
 
-        NamespaceManager._ensure_init_files(orgs, base_cache_dir)
-        NamespaceManager._add_to_syspath(base_cache_dir)
-        NamespaceManager._add_workspace_root_features(working_dir)
         NamespaceManager._import_namespaces(orgs)
 
     # ------------------------------------------------------------------

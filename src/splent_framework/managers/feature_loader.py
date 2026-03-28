@@ -356,17 +356,24 @@ class FeatureLoader:
     def load(self, ref: FeatureRef) -> None:
         """Fully load and integrate one feature.
 
-        Steps:
-          1. Resolve the feature directory (symlink → realpath)
-          2. Validate the expected internal structure
-          3. Add src/ to sys.path
-          4. Import the root package and conventional submodules
-          5. Run Flask integration hooks via FeatureIntegrator
-        """
-        feature_dir = self._resolver.resolve(self._features_dir, ref)
-        src_root, _, _ = self._validator.validate(feature_dir, ref)
+        In development, features live on disk (symlinks → cache or workspace
+        root) so we resolve, validate, and add src/ to sys.path.
 
-        self._importer.add_to_syspath(src_root)
+        In production, features are pip-installed from PyPI — there are no
+        symlinks.  When the resolver cannot find a directory we fall back to
+        a direct import, which works because pip already placed the package
+        in site-packages.
+        """
+        try:
+            feature_dir = self._resolver.resolve(self._features_dir, ref)
+            src_root, _, _ = self._validator.validate(feature_dir, ref)
+            self._importer.add_to_syspath(src_root)
+        except FeatureError:
+            # No local directory found — the feature must be pip-installed.
+            logger.debug(
+                "No local directory for %s — assuming pip-installed package.",
+                ref.import_name(),
+            )
 
         import_name = ref.import_name()
         module = self._importer.import_package(import_name)
