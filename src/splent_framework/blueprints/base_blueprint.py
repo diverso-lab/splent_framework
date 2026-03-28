@@ -57,15 +57,45 @@ class BaseBlueprint(Blueprint):
                 self.send_file,
             )
 
+    def _resolve_asset_path(self, subfolder, filename):
+        """Find an asset file, checking workspace root first (for compiled assets)."""
+        # Primary: feature_code_path (where the module was imported from)
+        primary = os.path.join(self.feature_code_path, "assets", subfolder, filename)
+        if os.path.isfile(primary):
+            return os.path.realpath(primary), os.path.realpath(
+                os.path.join(self.feature_code_path, "assets", subfolder)
+            )
+
+        # Fallback: workspace root (editable feature may have compiled dist/ here)
+        workspace = os.getenv("WORKING_DIR")
+        if workspace:
+            # feature_code_path looks like .../src/splent_io/splent_feature_X
+            # We need just the feature package name
+            feature_name = os.path.basename(self.feature_code_path)
+            org_name = os.path.basename(os.path.dirname(self.feature_code_path))
+            fallback = os.path.join(
+                workspace, feature_name, "src", org_name, feature_name,
+                "assets", subfolder, filename,
+            )
+            if os.path.isfile(fallback):
+                return os.path.realpath(fallback), os.path.realpath(
+                    os.path.join(
+                        workspace, feature_name, "src", org_name, feature_name,
+                        "assets", subfolder,
+                    )
+                )
+
+        return None, None
+
     def send_file(self, subfolder, filename):
         allowed_subfolders = {"js", "css", "dist"}
         if subfolder not in allowed_subfolders:
             abort(404)
 
-        base_dir = os.path.realpath(
-            os.path.join(self.feature_code_path, "assets", subfolder)
-        )
-        requested_path = os.path.realpath(os.path.join(base_dir, filename))
+        requested_path, base_dir = self._resolve_asset_path(subfolder, filename)
+
+        if not requested_path:
+            abort(404)
 
         # Prevent path traversal: resolved path must stay inside base_dir
         if (
@@ -73,9 +103,6 @@ class BaseBlueprint(Blueprint):
             and requested_path != base_dir
         ):
             abort(403)
-
-        if not os.path.isfile(requested_path):
-            abort(404)
 
         if filename.endswith(".js"):
             mimetype = "application/javascript"
