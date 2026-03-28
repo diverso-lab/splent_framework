@@ -72,17 +72,17 @@ def feature_workspace_no_migrations(tmp_path, monkeypatch):
     pyproject.write_text(
         '[project]\nname = "test_app"\nversion = "1.0.0"\n'
         '[project.optional-dependencies]\n'
-        'features = ["splent-io/splent_feature_redis@v1.0.0"]\n'
+        'features = ["splent-io/splent_feature_nomigrations@v1.0.0"]\n'
     )
 
-    feat_dir = cache / "splent_feature_redis@v1.0.0" / "src" / "splent_io" / "splent_feature_redis"
+    feat_dir = cache / "splent_feature_nomigrations@v1.0.0" / "src" / "splent_io" / "splent_feature_nomigrations"
     feat_dir.mkdir(parents=True)
     # No migrations/ directory
 
     target = os.path.relpath(
-        cache / "splent_feature_redis@v1.0.0", features_dir
+        cache / "splent_feature_nomigrations@v1.0.0", features_dir
     )
-    (features_dir / "splent_feature_redis@v1.0.0").symlink_to(target)
+    (features_dir / "splent_feature_nomigrations@v1.0.0").symlink_to(target)
 
     return tmp_path
 
@@ -104,7 +104,7 @@ class TestGetFeatureMigrationDir:
     def test_returns_none_when_no_migrations(self, feature_workspace_no_migrations):
         from splent_framework.managers.migration_manager import MigrationManager
 
-        result = MigrationManager.get_feature_migration_dir("splent_feature_redis")
+        result = MigrationManager.get_feature_migration_dir("splent_feature_nomigrations")
         assert result is None
 
     def test_returns_none_for_unknown_feature(self, feature_workspace):
