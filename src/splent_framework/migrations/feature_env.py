@@ -36,7 +36,24 @@ from splent_framework.db import db
 from splent_framework.managers.migration_manager import alembic_version_table
 
 
-def run_feature_migrations(feature_name: str, feature_tables: set[str]) -> None:
+def _auto_detect_tables(feature_name: str) -> set[str]:
+    """Auto-detect tables owned by this feature from imported models.
+
+    Scans db.Model subclasses whose module starts with the feature's
+    namespace (e.g., splent_io.splent_feature_notes).
+    """
+    tables = set()
+    for mapper in db.Model.registry.mappers:
+        cls = mapper.class_
+        module = getattr(cls, "__module__", "") or ""
+        if feature_name in module:
+            tablename = getattr(cls, "__tablename__", None)
+            if tablename:
+                tables.add(tablename)
+    return tables
+
+
+def run_feature_migrations(feature_name: str, feature_tables: set[str] | None = None) -> None:
     """
     Execute Alembic migrations for a single SPLENT feature.
 
@@ -44,12 +61,16 @@ def run_feature_migrations(feature_name: str, feature_tables: set[str]) -> None:
         feature_name:   Python-safe feature identifier, e.g. ``"splent_feature_auth"``.
                         Used as the Alembic version table suffix (``alembic_<feature_name>``).
         feature_tables: Set of DB table names exclusively owned by this feature.
-                        Only these tables are considered during autogenerate.
+                        If empty or None, auto-detects from imported models.
     """
     cfg = context.config
 
     if cfg.config_file_name is not None:
         fileConfig(cfg.config_file_name)
+
+    # Auto-detect tables if not explicitly declared
+    if not feature_tables:
+        feature_tables = _auto_detect_tables(feature_name)
 
     target_metadata = db.metadata
     version_table = alembic_version_table(feature_name)
