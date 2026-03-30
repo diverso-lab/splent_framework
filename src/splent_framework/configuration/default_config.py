@@ -16,7 +16,8 @@ class Config:
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     TEMPLATES_AUTO_RELOAD = True
     UPLOAD_FOLDER = "uploads"
-    SESSION_TYPE = "filesystem"
+    # SESSION_TYPE is NOT set here — it must come from a session feature
+    # (splent_feature_session_redis or splent_feature_session_filesystem)
 
     def __init__(self):
         # Resolved at instantiation time so runtime env changes are picked up
@@ -34,8 +35,6 @@ class DevelopmentConfig(Config):
 class TestingConfig(Config):
     TESTING = True
     WTF_CSRF_ENABLED = False
-    SESSION_TYPE = "filesystem"
-    SESSION_FILE_DIR = "/tmp/flask_sessions"
 
     def __init__(self):
         super().__init__()
