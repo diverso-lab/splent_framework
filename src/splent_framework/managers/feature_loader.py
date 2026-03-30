@@ -248,6 +248,7 @@ class FeatureIntegrator:
         self._call_init(module, import_name)
         self._apply_service_overrides(import_name)
         self._register_blueprints(module, import_name)
+        self._register_translations(module, import_name)
 
     # ------------------------------------------------------------------
 
@@ -401,6 +402,16 @@ class FeatureIntegrator:
                 logger.error("Failed to register blueprint '%s': %s", obj.name, e)
 
         return registered
+
+    def _register_translations(self, module, import_name: str) -> None:
+        """Register the feature's translations/ directory with Flask-Babel."""
+        pkg_dir = os.path.dirname(module.__file__) if hasattr(module, "__file__") else None
+        if not pkg_dir:
+            return
+        translations_dir = os.path.join(pkg_dir, "translations")
+        if os.path.isdir(translations_dir):
+            from splent_framework.managers.locale_manager import LocaleManager
+            LocaleManager.register_translation_dir(self._app, translations_dir)
 
 
 # ---------------------------------------------------------------------------

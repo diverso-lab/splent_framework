@@ -24,6 +24,7 @@ from splent_framework.managers.session_manager import SessionManager
 from splent_framework.managers.logging_manager import LoggingManager
 from splent_framework.managers.error_handler_manager import ErrorHandlerManager
 from splent_framework.managers.jinja_manager import JinjaManager
+from splent_framework.managers.locale_manager import LocaleManager
 from splent_framework.managers.feature_manager import FeatureManager
 
 logger = logging.getLogger(__name__)
@@ -37,6 +38,7 @@ _PIPELINE = [
     ("sessions", lambda app, **kw: SessionManager(app)),
     ("logging", lambda app, **kw: LoggingManager(app).setup_logging()),
     ("error_handlers", lambda app, **kw: ErrorHandlerManager(app).register_error_handlers()),
+    ("locale", lambda app, **kw: LocaleManager(app)),
     ("jinja_context", lambda app, **kw: JinjaManager(app, kw.get("context", {}))),
     ("features", lambda app, **kw: FeatureManager(app, strict=kw.get("strict", False)).register_features()),
 ]
