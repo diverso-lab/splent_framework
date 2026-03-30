@@ -28,7 +28,7 @@ from flask import Blueprint
 logger = logging.getLogger(__name__)
 
 # Conventional submodules attempted on every feature package
-FEATURE_SUBMODULES = ("routes", "models", "hooks")
+FEATURE_SUBMODULES = ("routes", "models", "hooks", "signals")
 
 
 # ---------------------------------------------------------------------------
