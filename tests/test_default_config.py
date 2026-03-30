@@ -70,8 +70,8 @@ class TestConfig:
     def test_track_modifications_disabled(self):
         assert Config.SQLALCHEMY_TRACK_MODIFICATIONS is False
 
-    def test_session_type_filesystem(self):
-        assert Config.SESSION_TYPE == "filesystem"
+    def test_session_type_not_in_base_config(self):
+        assert not hasattr(Config, "SESSION_TYPE")
 
     def test_templates_auto_reload(self):
         assert Config.TEMPLATES_AUTO_RELOAD is True
@@ -112,9 +112,9 @@ class TestTestingConfig:
         cfg = TestingConfig()
         assert "prod_db" not in cfg.SQLALCHEMY_DATABASE_URI
 
-    def test_session_file_dir(self):
+    def test_session_type_not_in_testing_config(self):
         cfg = TestingConfig()
-        assert cfg.SESSION_FILE_DIR == "/tmp/flask_sessions"
+        assert not hasattr(cfg, "SESSION_FILE_DIR")
 
 
 class TestProductionConfig:

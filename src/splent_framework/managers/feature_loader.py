@@ -249,6 +249,7 @@ class FeatureIntegrator:
         self._apply_service_overrides(import_name)
         self._register_blueprints(module, import_name)
         self._register_translations(module, import_name)
+        self._register_commands(import_name)
 
     # ------------------------------------------------------------------
 
@@ -412,6 +413,46 @@ class FeatureIntegrator:
         if os.path.isdir(translations_dir):
             from splent_framework.managers.locale_manager import LocaleManager
             LocaleManager.register_translation_dir(self._app, translations_dir)
+
+    def _register_commands(self, import_name: str) -> None:
+        """Collect Click commands from the feature's ``commands`` submodule.
+
+        If the feature defines ``<package>.commands`` with a ``cli_commands``
+        list, each Click command is stored in
+        ``app.extensions["splent_feature_commands"]`` keyed by feature short
+        name (e.g. ``"mail"``).  The CLI reads this registry at runtime.
+        """
+        try:
+            cmd_mod = importlib.import_module(f"{import_name}.commands")
+        except ModuleNotFoundError:
+            return
+        except Exception as e:
+            logger.warning("Error importing %s.commands: %s", import_name, e)
+            return
+
+        commands = getattr(cmd_mod, "cli_commands", None)
+        if not commands:
+            return
+
+        # Derive short name: "splent_feature_mail" → "mail"
+        feature_pkg = import_name.rsplit(".", 1)[-1]
+        short = (
+            feature_pkg[len("splent_feature_"):]
+            if feature_pkg.startswith("splent_feature_")
+            else feature_pkg
+        )
+
+        registry = self._app.extensions.setdefault("splent_feature_commands", {})
+        from click import BaseCommand
+        valid = [c for c in commands if isinstance(c, BaseCommand)]
+        if valid:
+            registry[short] = valid
+            logger.info(
+                "Registered %d CLI command(s) for feature '%s': %s",
+                len(valid),
+                short,
+                [c.name for c in valid],
+            )
 
 
 # ---------------------------------------------------------------------------

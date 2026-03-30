@@ -227,6 +227,18 @@ class MigrationManager:
                 )
 
     @staticmethod
+    def delete_feature_status(app, feature_name: str) -> None:
+        """Remove the row for *feature_name* from splent_migrations."""
+        with app.app_context():
+            with db.engine.begin() as conn:
+                conn.execute(
+                    text(
+                        f"DELETE FROM `{SPLENT_MIGRATIONS_TABLE}` WHERE feature = :feature"
+                    ),
+                    {"feature": feature_name},
+                )
+
+    @staticmethod
     def get_all_status(app) -> list[tuple[str, str | None]]:
         """Return ``[(feature, last_migration), ...]`` from splent_migrations."""
         with app.app_context():
