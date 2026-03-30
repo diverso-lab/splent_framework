@@ -286,6 +286,10 @@ class FeatureManager:
             )
             if os.path.isfile(catalog_uvl):
                 return catalog_uvl
+            logger.warning(
+                "UVL not found for SPL '%s'. Run: splent spl:fetch %s",
+                spl_name, spl_name,
+            )
 
         # 2. Legacy: [tool.splent.uvl].file inside product
         uvl_file = reader.uvl_config.get("file")
