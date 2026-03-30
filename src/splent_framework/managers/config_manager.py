@@ -47,3 +47,8 @@ class ConfigManager:
                 config_data[k] = getattr(config_instance, k)
 
         self.app.config.from_mapping(config_data)
+
+        # Trace: mark all product-level config keys
+        trace = self.app.extensions.setdefault("splent_config_trace", {})
+        for key, value in config_data.items():
+            trace[key] = {"value": value, "source": f"product ({splent_app})", "action": "set"}

@@ -311,14 +311,34 @@ class FeatureIntegrator:
             raise FeatureError(f"Error importing {import_name}.config: {e}") from e
 
         if hasattr(config_mod, "inject_config"):
+            snapshot = dict(self._app.config)
             try:
                 config_mod.inject_config(self._app)
             except Exception as e:
                 raise FeatureError(
                     f"Error in {import_name}.config.inject_config: {e}"
                 ) from e
+            self._trace_config_changes(snapshot, import_name)
         elif self._strict:
             raise FeatureError(f"{import_name}.config lacks inject_config(app)")
+
+    def _trace_config_changes(self, snapshot: dict, source: str) -> None:
+        """Record which config keys were added or changed by *source*."""
+        trace = self._app.extensions.setdefault("splent_config_trace", {})
+        for key, value in self._app.config.items():
+            if not key.isupper():
+                continue
+            if key not in snapshot:
+                trace[key] = {"value": value, "source": source, "action": "added"}
+            elif snapshot[key] != value:
+                prev = trace.get(key, {})
+                trace[key] = {
+                    "value": value,
+                    "source": source,
+                    "action": "overwritten",
+                    "prev_source": prev.get("source", "product"),
+                    "prev_value": snapshot[key],
+                }
 
     def _call_init(self, module, import_name: str) -> None:
         if hasattr(module, "init_feature"):
@@ -333,7 +353,9 @@ class FeatureIntegrator:
 
     def _register_blueprints(self, module, import_name: str) -> None:
         candidates = self._collect_candidate_modules(module, import_name)
-        registered = sum(self._register_from_module(mod) for mod in candidates)
+        registered = sum(
+            self._register_from_module(mod, import_name) for mod in candidates
+        )
 
         if registered == 0:
             logger.warning("No blueprints registered for %s", import_name)
@@ -350,9 +372,10 @@ class FeatureIntegrator:
             if f"{import_name}.{sub}" in sys.modules
         ]
 
-    def _register_from_module(self, mod: types.ModuleType) -> int:
+    def _register_from_module(self, mod: types.ModuleType, import_name: str) -> int:
         """Register all Blueprint instances found in *mod*. Returns count registered."""
         registered = 0
+        trace = self._app.extensions.setdefault("splent_blueprint_trace", {})
         for attr in dir(mod):
             try:
                 obj = getattr(mod, attr)
@@ -372,6 +395,7 @@ class FeatureIntegrator:
 
             try:
                 self._app.register_blueprint(obj)
+                trace[obj.name] = import_name
                 registered += 1
             except Exception as e:
                 logger.error("Failed to register blueprint '%s': %s", obj.name, e)
