@@ -74,14 +74,25 @@ class BaseBlueprint(Blueprint):
             feature_name = os.path.basename(self.feature_code_path)
             org_name = os.path.basename(os.path.dirname(self.feature_code_path))
             fallback = os.path.join(
-                workspace, feature_name, "src", org_name, feature_name,
-                "assets", subfolder, filename,
+                workspace,
+                feature_name,
+                "src",
+                org_name,
+                feature_name,
+                "assets",
+                subfolder,
+                filename,
             )
             if os.path.isfile(fallback):
                 return os.path.realpath(fallback), os.path.realpath(
                     os.path.join(
-                        workspace, feature_name, "src", org_name, feature_name,
-                        "assets", subfolder,
+                        workspace,
+                        feature_name,
+                        "src",
+                        org_name,
+                        feature_name,
+                        "assets",
+                        subfolder,
                     )
                 )
 

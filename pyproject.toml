@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "splent_framework"
-version = "1.4.1"
+version = "1.4.2"
 description = "SPLENT-FRAMEWORK is a set of libraries for agile product development within SPLENT."
 readme = "README.md"
 requires-python = ">=3.13"

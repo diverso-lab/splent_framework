@@ -7,7 +7,7 @@ Read during the integrate phase to apply overrides.
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 
 @dataclass(frozen=True)
@@ -36,9 +36,7 @@ class RefinementRegistry:
             entry
         )
 
-    def get_overrides(
-        self, base_feature: str, category: str
-    ) -> list[RefinementEntry]:
+    def get_overrides(self, base_feature: str, category: str) -> list[RefinementEntry]:
         return self._index.get(base_feature, {}).get(category, [])
 
     def get_all_for_base(self, base_feature: str) -> dict[str, list[RefinementEntry]]:

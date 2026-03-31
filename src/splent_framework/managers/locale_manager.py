@@ -35,6 +35,7 @@ def get_locale():
 
     # 2. Accept-Language header negotiation
     from flask import current_app
+
     supported = current_app.config.get("BABEL_SUPPORTED_LOCALES", ["en"])
     return request.accept_languages.best_match(supported)
 

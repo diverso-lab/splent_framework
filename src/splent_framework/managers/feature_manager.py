@@ -133,9 +133,6 @@ class FeatureManager:
         if not template_overrides:
             return
 
-        # Build a map: blueprint_name -> registration order index
-        bp_names = list(self._app.blueprints.keys())
-
         for entry in template_overrides:
             # Find the refiner's blueprint (convention: refiner registers its own bp)
             # The refiner's templates are served from its own blueprint template folder.
@@ -147,19 +144,18 @@ class FeatureManager:
             # This means template override works out of the box for same-path templates.
             logger.info(
                 "Template override: %s (from %s, by %s)",
-                entry.target, entry.base, entry.refiner,
+                entry.target,
+                entry.base,
+                entry.refiner,
             )
 
-    def _setup_refinement_registry(
-        self, product_dir: str, ordered: list[str]
-    ) -> None:
+    def _setup_refinement_registry(self, product_dir: str, ordered: list[str]) -> None:
         """Read extensible/refinement declarations from feature pyproject files,
         validate them, and populate the global RefinementRegistry."""
         clear_registry()
         registry = get_registry()
 
         features_dir = os.path.join(product_dir, "features")
-        resolver = FeatureLinkResolver()
 
         extensibles = {}  # feature_name -> ExtensibleContract
         refinements = {}  # feature_name -> RefinementConfig
@@ -198,35 +194,60 @@ class FeatureManager:
         # Populate registry
         for refiner_name, config in refinements.items():
             for svc in config.overrides_services:
-                registry.register(RefinementEntry(
-                    refiner=refiner_name, base=config.refines,
-                    category="service", target=svc.target,
-                    replacement=svc.replacement, action="override",
-                ))
+                registry.register(
+                    RefinementEntry(
+                        refiner=refiner_name,
+                        base=config.refines,
+                        category="service",
+                        target=svc.target,
+                        replacement=svc.replacement,
+                        action="override",
+                    )
+                )
             for tpl in config.overrides_templates:
-                registry.register(RefinementEntry(
-                    refiner=refiner_name, base=config.refines,
-                    category="template", target=tpl.target,
-                    replacement=tpl.replacement, action="override",
-                ))
+                registry.register(
+                    RefinementEntry(
+                        refiner=refiner_name,
+                        base=config.refines,
+                        category="template",
+                        target=tpl.target,
+                        replacement=tpl.replacement,
+                        action="override",
+                    )
+                )
             for hook in config.overrides_hooks:
-                registry.register(RefinementEntry(
-                    refiner=refiner_name, base=config.refines,
-                    category="hook", target=hook.target,
-                    replacement=hook.replacement, action="replace",
-                ))
+                registry.register(
+                    RefinementEntry(
+                        refiner=refiner_name,
+                        base=config.refines,
+                        category="hook",
+                        target=hook.target,
+                        replacement=hook.replacement,
+                        action="replace",
+                    )
+                )
             for model in config.extends_models:
-                registry.register(RefinementEntry(
-                    refiner=refiner_name, base=config.refines,
-                    category="model", target=model.target,
-                    replacement=model.mixin, action="extend",
-                ))
+                registry.register(
+                    RefinementEntry(
+                        refiner=refiner_name,
+                        base=config.refines,
+                        category="model",
+                        target=model.target,
+                        replacement=model.mixin,
+                        action="extend",
+                    )
+                )
             for route in config.adds_routes:
-                registry.register(RefinementEntry(
-                    refiner=refiner_name, base=config.refines,
-                    category="route", target=route.blueprint,
-                    replacement=route.module, action="add",
-                ))
+                registry.register(
+                    RefinementEntry(
+                        refiner=refiner_name,
+                        base=config.refines,
+                        category="route",
+                        target=route.blueprint,
+                        replacement=route.module,
+                        action="add",
+                    )
+                )
 
     def _read_feature_pyproject(
         self, features_dir: str, ref: FeatureRef
@@ -288,7 +309,8 @@ class FeatureManager:
                 return catalog_uvl
             logger.warning(
                 "UVL not found for SPL '%s'. Run: splent spl:fetch %s",
-                spl_name, spl_name,
+                spl_name,
+                spl_name,
             )
 
         # 2. Legacy: [tool.splent.uvl].file inside product

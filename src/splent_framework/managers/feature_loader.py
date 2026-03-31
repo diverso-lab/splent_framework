@@ -278,7 +278,9 @@ class FeatureIntegrator:
             except (ImportError, AttributeError) as e:
                 logger.warning(
                     "Cannot apply model mixin %s from %s: %s",
-                    entry.replacement, entry.refiner, e,
+                    entry.replacement,
+                    entry.refiner,
+                    e,
                 )
 
     def _apply_service_overrides(self, import_name: str) -> None:
@@ -299,7 +301,10 @@ class FeatureIntegrator:
             if entry.refiner == feature_name and entry.category == "service":
                 logger.info(
                     "Service override: %s.%s → %s (by %s)",
-                    entry.base, entry.target, entry.replacement, entry.refiner,
+                    entry.base,
+                    entry.target,
+                    entry.replacement,
+                    entry.refiner,
                 )
 
     def _inject_config(self, import_name: str) -> None:
@@ -406,12 +411,15 @@ class FeatureIntegrator:
 
     def _register_translations(self, module, import_name: str) -> None:
         """Register the feature's translations/ directory with Flask-Babel."""
-        pkg_dir = os.path.dirname(module.__file__) if hasattr(module, "__file__") else None
+        pkg_dir = (
+            os.path.dirname(module.__file__) if hasattr(module, "__file__") else None
+        )
         if not pkg_dir:
             return
         translations_dir = os.path.join(pkg_dir, "translations")
         if os.path.isdir(translations_dir):
             from splent_framework.managers.locale_manager import LocaleManager
+
             LocaleManager.register_translation_dir(self._app, translations_dir)
 
     def _register_commands(self, import_name: str) -> None:
@@ -437,13 +445,14 @@ class FeatureIntegrator:
         # Derive short name: "splent_feature_mail" → "mail"
         feature_pkg = import_name.rsplit(".", 1)[-1]
         short = (
-            feature_pkg[len("splent_feature_"):]
+            feature_pkg[len("splent_feature_") :]
             if feature_pkg.startswith("splent_feature_")
             else feature_pkg
         )
 
         registry = self._app.extensions.setdefault("splent_feature_commands", {})
         from click import BaseCommand
+
         valid = [c for c in commands if isinstance(c, BaseCommand)]
         if valid:
             registry[short] = valid

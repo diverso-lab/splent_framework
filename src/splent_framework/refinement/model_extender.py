@@ -33,7 +33,9 @@ def apply_model_mixin(model_name: str, mixin_cls: type) -> bool:
     # Find the model class in SQLAlchemy's registry
     model_cls = _find_model(model_name)
     if model_cls is None:
-        logger.warning("Model '%s' not found in registry — cannot apply mixin.", model_name)
+        logger.warning(
+            "Model '%s' not found in registry — cannot apply mixin.", model_name
+        )
         return False
 
     applied = 0
@@ -50,7 +52,8 @@ def apply_model_mixin(model_name: str, mixin_cls: type) -> bool:
             if hasattr(model_cls, attr_name):
                 logger.warning(
                     "Column '%s' already exists on %s — skipping.",
-                    attr_name, model_name,
+                    attr_name,
+                    model_name,
                 )
                 continue
             col = attr.copy()
@@ -69,7 +72,9 @@ def apply_model_mixin(model_name: str, mixin_cls: type) -> bool:
     if applied:
         logger.info(
             "Model %s extended with %d attribute(s) from %s",
-            model_name, applied, mixin_cls.__name__,
+            model_name,
+            applied,
+            mixin_cls.__name__,
         )
 
     return applied > 0

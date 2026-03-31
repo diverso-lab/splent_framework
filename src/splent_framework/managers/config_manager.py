@@ -51,4 +51,8 @@ class ConfigManager:
         # Trace: mark all product-level config keys
         trace = self.app.extensions.setdefault("splent_config_trace", {})
         for key, value in config_data.items():
-            trace[key] = {"value": value, "source": f"product ({splent_app})", "action": "set"}
+            trace[key] = {
+                "value": value,
+                "source": f"product ({splent_app})",
+                "action": "set",
+            }

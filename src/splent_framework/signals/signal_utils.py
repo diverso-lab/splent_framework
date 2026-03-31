@@ -70,7 +70,9 @@ def connect_signal(signal_name: str, listener_feature: str):
             logger.warning(
                 "Signal '%s' not found — handler %s.%s not connected. "
                 "Is the provider feature installed?",
-                signal_name, fn.__module__, fn.__name__,
+                signal_name,
+                fn.__module__,
+                fn.__name__,
             )
         return fn
 

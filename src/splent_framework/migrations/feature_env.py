@@ -53,7 +53,9 @@ def _auto_detect_tables(feature_name: str) -> set[str]:
     return tables
 
 
-def run_feature_migrations(feature_name: str, feature_tables: set[str] | None = None) -> None:
+def run_feature_migrations(
+    feature_name: str, feature_tables: set[str] | None = None
+) -> None:
     """
     Execute Alembic migrations for a single SPLENT feature.
 

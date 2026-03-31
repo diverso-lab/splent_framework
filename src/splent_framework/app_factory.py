@@ -33,13 +33,26 @@ logger = logging.getLogger(__name__)
 # Each step is a (label, callable) pair.  The callable receives (app, **kwargs).
 _PIPELINE = [
     ("namespaces", lambda app, **kw: NamespaceManager.init_app(app)),
-    ("config", lambda app, **kw: ConfigManager.init_app(app, kw.get("config_name", "development"))),
+    (
+        "config",
+        lambda app, **kw: ConfigManager.init_app(
+            app, kw.get("config_name", "development")
+        ),
+    ),
     ("database", lambda app, **kw: MigrationManager(app)),
     ("logging", lambda app, **kw: LoggingManager(app).setup_logging()),
-    ("error_handlers", lambda app, **kw: ErrorHandlerManager(app).register_error_handlers()),
+    (
+        "error_handlers",
+        lambda app, **kw: ErrorHandlerManager(app).register_error_handlers(),
+    ),
     ("locale", lambda app, **kw: LocaleManager(app)),
     ("jinja_context", lambda app, **kw: JinjaManager(app, kw.get("context", {}))),
-    ("features", lambda app, **kw: FeatureManager(app, strict=kw.get("strict", False)).register_features()),
+    (
+        "features",
+        lambda app, **kw: FeatureManager(
+            app, strict=kw.get("strict", False)
+        ).register_features(),
+    ),
     ("sessions", lambda app, **kw: SessionManager(app)),
 ]
 
