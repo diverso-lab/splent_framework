@@ -5,6 +5,33 @@ import sys
 import importlib
 
 
+def create_blueprint(import_name: str, **kwargs) -> "BaseBlueprint":
+    """Create a BaseBlueprint with the name inferred from the module.
+
+    Extracts the short name from the module path::
+
+        "splent_io.splent_feature_notes_tags" → "notes_tags"
+        "splent_io.splent_feature_auth"       → "auth"
+
+    Parameters
+    ----------
+    import_name : str
+        Pass ``__name__`` from the feature's ``__init__.py``.
+    **kwargs
+        Extra arguments forwarded to :class:`BaseBlueprint`
+        (e.g. ``url_prefix``, ``static_folder``).
+
+    Returns
+    -------
+    BaseBlueprint
+    """
+    # "splent_io.splent_feature_notes_tags" → "splent_feature_notes_tags"
+    pkg = import_name.rsplit(".", 1)[-1]
+    # "splent_feature_notes_tags" → "notes_tags"
+    short = pkg.replace("splent_feature_", "") if pkg.startswith("splent_feature_") else pkg
+    return BaseBlueprint(short, import_name, **kwargs)
+
+
 class BaseBlueprint(Blueprint):
     def __init__(
         self,
