@@ -2,23 +2,12 @@
 
 Core library for building modular, feature-driven Flask applications using Software Product Line principles.
 
-## What it provides
-
-- **Manager pattern** — Pluggable subsystem managers (features, config, migrations, sessions, Jinja, error handling)
-- **Feature system** — Modular features with lifecycle tracking, UVL-based dependency ordering, and per-feature Alembic migrations
-- **Base classes** — `BaseBlueprint`, `BaseRepository`, `BaseService`, `BaseSeeder`, `GenericResource`
-- **App factory** — `create_app()` wires everything together with env-aware feature loading
-
 ## Quick start
 
 ```python
-from splent_framework.managers.feature_manager import FeatureManager
+from splent_framework import create_splent_app
 
-def create_app(config_name="development"):
-    app = Flask(__name__)
-    # ... config, db, sessions ...
-    FeatureManager(app, strict=False).register_features()
-    return app
+app = create_splent_app(__name__, config_name="development")
 ```
 
 ## Requirements
@@ -29,7 +18,7 @@ def create_app(config_name="development"):
 
 ## Documentation
 
-Full documentation at **[docs.splent.io](https://docs.splent.io)**
+Full docs, tutorials, and architecture reference at **[docs.splent.io](https://docs.splent.io)**
 
 ## License
 

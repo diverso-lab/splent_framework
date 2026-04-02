@@ -82,13 +82,9 @@ class MigrationManager:
                             """
                         )
                     )
-            except sa_exc.SQLAlchemyError as exc:
-                logger.error(
-                    "Could not ensure %s table: %s",
-                    SPLENT_MIGRATIONS_TABLE,
-                    exc,
-                    exc_info=True,
-                )
+            except sa_exc.SQLAlchemyError:
+                # DB not available (e.g. container not running) — not fatal
+                pass
 
     # ──────────────────────────── static helpers ───────────────────────────
 

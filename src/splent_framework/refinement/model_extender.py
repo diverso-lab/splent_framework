@@ -50,11 +50,6 @@ def apply_model_mixin(model_name: str, mixin_cls: type) -> bool:
         # Column injection
         if isinstance(attr, db.Column):
             if hasattr(model_cls, attr_name):
-                logger.warning(
-                    "Column '%s' already exists on %s — skipping.",
-                    attr_name,
-                    model_name,
-                )
                 continue
             col = attr.copy()
             col.name = col.name or attr_name
