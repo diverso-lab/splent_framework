@@ -61,12 +61,13 @@ def refine_service(app, service_name: str, replacement_cls: type) -> None:
     """
     base_cls = get_service_class(app, service_name)
 
-    # Create a new class that inherits from the base and mixes in the
-    # replacement's methods. This avoids __bases__ assignment errors
-    # that occur when base classes have incompatible memory layouts.
+    # Build a class that inherits from the replacement first (so its
+    # methods win) and then from the base (so super() chains correctly).
+    # This preserves Python 3 implicit super() because the original
+    # replacement_cls stays in the MRO.
     merged = type(
         replacement_cls.__name__,
-        (base_cls,),
-        {k: v for k, v in vars(replacement_cls).items() if not k.startswith("__")},
+        (replacement_cls, base_cls),
+        {},
     )
     register_service(app, service_name, merged)

@@ -245,7 +245,6 @@ class FeatureIntegrator:
         """Run all integration steps for the given feature module."""
         self._inject_config(import_name)
         self._apply_model_extensions(import_name)
-        self._auto_register_services(import_name)
         self._call_init(module, import_name)
         self._apply_service_overrides(import_name)
         self._register_blueprints(module, import_name)
@@ -347,33 +346,6 @@ class FeatureIntegrator:
                     "prev_source": prev.get("source", "product"),
                     "prev_value": snapshot[key],
                 }
-
-    def _auto_register_services(self, import_name: str) -> None:
-        """Auto-register service classes from the feature's services module.
-
-        Scans ``<import_name>.services`` for classes whose name ends with
-        ``Service`` (and inherits from BaseService) and registers them in
-        the service locator automatically.
-        """
-        from splent_framework.services.service_locator import register_service
-
-        services_module_name = f"{import_name}.services"
-        try:
-            services_module = importlib.import_module(services_module_name)
-        except ImportError:
-            return  # no services module — nothing to register
-
-        for attr_name in dir(services_module):
-            if not attr_name.endswith("Service"):
-                continue
-            cls = getattr(services_module, attr_name)
-            if not isinstance(cls, type):
-                continue
-            # Only register concrete service classes defined in this module
-            if cls.__module__ != services_module_name:
-                continue
-            register_service(self._app, attr_name, cls)
-            logger.info("Auto-registered service: %s", attr_name)
 
     def _call_init(self, module, import_name: str) -> None:
         if hasattr(module, "init_feature"):

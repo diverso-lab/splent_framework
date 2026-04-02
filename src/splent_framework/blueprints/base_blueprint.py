@@ -28,7 +28,9 @@ def create_blueprint(import_name: str, **kwargs) -> "BaseBlueprint":
     # "splent_io.splent_feature_notes_tags" → "splent_feature_notes_tags"
     pkg = import_name.rsplit(".", 1)[-1]
     # "splent_feature_notes_tags" → "notes_tags"
-    short = pkg.replace("splent_feature_", "") if pkg.startswith("splent_feature_") else pkg
+    short = (
+        pkg.replace("splent_feature_", "") if pkg.startswith("splent_feature_") else pkg
+    )
     return BaseBlueprint(short, import_name, **kwargs)
 
 

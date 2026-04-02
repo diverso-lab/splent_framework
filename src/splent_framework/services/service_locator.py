@@ -59,3 +59,31 @@ def get_service_class(app: Flask, name: str) -> type:
 def get_all_services(app: Flask) -> dict[str, type]:
     """Return the full service registry (read-only snapshot)."""
     return dict(_ensure_registry(app))
+
+
+def service_proxy(name: str):
+    """Return a proxy that resolves the service from the locator on every access.
+
+    Usage in routes::
+
+        from splent_framework.services.service_locator import service_proxy
+
+        notes_service = service_proxy("NotesService")
+
+        @bp.route("/notes/")
+        def index():
+            notes = notes_service.get_by_user(current_user.id)
+            ...
+
+    The proxy instantiates a fresh service on each attribute access,
+    so it always reflects the current registered class (including
+    refinement overrides). It only works inside a Flask request context.
+    """
+    from werkzeug.local import LocalProxy
+    from flask import current_app
+
+    def _lookup():
+        cls = get_service_class(current_app._get_current_object(), name)
+        return cls()
+
+    return LocalProxy(_lookup)
