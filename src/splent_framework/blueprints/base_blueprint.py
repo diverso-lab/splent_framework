@@ -81,7 +81,7 @@ class BaseBlueprint(Blueprint):
         assets_folder = os.path.join(self.feature_code_path, "assets")
         if os.path.exists(assets_folder):
             self.add_url_rule(
-                f"/{self.name}/<path:subfolder>/<path:filename>",
+                f"/{self.name}/<subfolder>/<filename>",
                 "assets",
                 self.send_file,
             )
