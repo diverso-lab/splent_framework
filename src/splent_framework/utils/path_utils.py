@@ -29,7 +29,24 @@ class PathUtils:
     def get_app_env_file():
         working_dir = PathUtils.get_working_dir()
         splent_app = os.getenv("SPLENT_APP", "splent_app")
-        return os.path.join(working_dir, splent_app, "docker", ".env")
+        docker_dir = os.path.join(working_dir, splent_app, "docker")
+
+        # In production the container is configured through the deploy env_file
+        # (``.env.deploy``), which is the single source of truth for prod values
+        # such as ``MARIADB_HOSTNAME``. The development ``.env`` is baked into the
+        # production image at build time (it points at the *dev* database host),
+        # so loading it with ``override=True`` would clobber the correct deploy
+        # values that the container already received from its ``env_file``.
+        #
+        # When running in production, return the ``.env.deploy`` path. It is not
+        # baked into the image (it is generated after the build), so callers that
+        # guard with ``os.path.exists(...)`` simply skip the load and keep the
+        # authoritative process environment untouched. If it ever is present, it
+        # carries the correct production values, so loading it is still right.
+        if os.getenv("SPLENT_ENV", "dev").lower() == "prod":
+            return os.path.join(docker_dir, ".env.deploy")
+
+        return os.path.join(docker_dir, ".env")
 
     @staticmethod
     def get_modules_dir():
