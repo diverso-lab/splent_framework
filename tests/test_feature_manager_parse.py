@@ -4,8 +4,9 @@ Tests for FeatureEntryParser and FeatureRef.
 Covers all supported entry formats:
   org/name@version  |  name@version  |  org/name  |  name
 """
+
 import pytest
-from splent_framework.managers.feature_loader import FeatureEntryParser, FeatureRef, FeatureError
+from splent_framework.managers.feature_loader import FeatureEntryParser, FeatureError
 
 
 @pytest.fixture

@@ -2,7 +2,6 @@
 Tests for context_manager.build_jinja_context.
 """
 
-import pytest
 from flask import Flask
 from splent_framework.context.context_manager import build_jinja_context
 
@@ -10,6 +9,7 @@ from splent_framework.context.context_manager import build_jinja_context
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
 
 def _app():
     app = Flask(__name__)
@@ -20,6 +20,7 @@ def _app():
 # ---------------------------------------------------------------------------
 # Basic behaviour
 # ---------------------------------------------------------------------------
+
 
 class TestBuildJinjaContext:
     def test_returns_base_context_unchanged_when_no_processors(self):

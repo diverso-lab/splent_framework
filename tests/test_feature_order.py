@@ -70,6 +70,7 @@ def pkg(name: str) -> str:
 # UVL parsing
 # ---------------------------------------------------------------------------
 
+
 class TestParsePackageMap:
     def test_extracts_short_to_package_mapping(self):
         mapping = FeatureLoadOrderResolver._parse_package_map(SAMPLE_UVL)
@@ -102,6 +103,7 @@ class TestParseConstraints:
 # Core ordering — single constraint
 # ---------------------------------------------------------------------------
 
+
 class TestSingleDependency:
     def test_profile_loads_after_auth_when_profile_declared_first(self, tmp_path):
         uvl = write_uvl(tmp_path, SAMPLE_UVL)
@@ -131,6 +133,7 @@ class TestSingleDependency:
 # ---------------------------------------------------------------------------
 # Full product set (mirrors sample_splent_app)
 # ---------------------------------------------------------------------------
+
 
 class TestFullProductOrder:
     FULL = [
@@ -174,6 +177,7 @@ class TestFullProductOrder:
 # Fallback behaviour
 # ---------------------------------------------------------------------------
 
+
 class TestFallback:
     def test_returns_original_order_when_uvl_path_is_none(self):
         features = [pkg("profile"), pkg("auth")]
@@ -188,7 +192,7 @@ class TestFallback:
     def test_returns_original_order_when_no_constraints_apply(self, tmp_path):
         """Features not mentioned in UVL constraints → pyproject order."""
         uvl = write_uvl(tmp_path, SAMPLE_UVL)
-        features = [pkg("public"), pkg("redis")]   # neither in UVL constraints
+        features = [pkg("public"), pkg("redis")]  # neither in UVL constraints
         result = RESOLVER.resolve(features, uvl)
         assert result == features
 
@@ -200,6 +204,7 @@ class TestFallback:
 # ---------------------------------------------------------------------------
 # Cycle detection
 # ---------------------------------------------------------------------------
+
 
 class TestCycleDetection:
     def test_raises_on_direct_cycle(self, tmp_path):
@@ -220,6 +225,7 @@ class TestCycleDetection:
 # ---------------------------------------------------------------------------
 # Stability (original order preserved for ties)
 # ---------------------------------------------------------------------------
+
 
 class TestStableOrdering:
     def test_three_independents_keep_original_order(self, tmp_path):

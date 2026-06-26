@@ -1,6 +1,7 @@
 """
 Tests for ConfigManager.init_app — verifies it returns the manager instance.
 """
+
 import pytest
 from flask import Flask
 from splent_framework.managers.config_manager import ConfigManager
@@ -14,7 +15,6 @@ def app(monkeypatch):
 
 
 class TestConfigManagerInitApp:
-
     def test_init_app_returns_manager_instance(self, app):
         manager = ConfigManager.init_app(app, config_name="development")
         assert manager is not None

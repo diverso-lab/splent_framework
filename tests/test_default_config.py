@@ -8,6 +8,7 @@ Covers:
 - ProductionConfig: DEBUG=False, picks MARIADB_DATABASE
 - Config base: SECRET_KEY, static class attributes
 """
+
 import pytest
 from splent_framework.configuration.default_config import (
     _build_db_uri,

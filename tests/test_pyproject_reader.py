@@ -3,6 +3,7 @@ Tests for splent_framework.utils.pyproject_reader.PyprojectReader
 
 Covers all properties and both factory constructors.
 """
+
 import pytest
 from splent_framework.utils.pyproject_reader import PyprojectReader
 
@@ -10,6 +11,7 @@ from splent_framework.utils.pyproject_reader import PyprojectReader
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
 
 def write_pyproject(directory, content: str) -> str:
     path = directory / "pyproject.toml"
@@ -39,6 +41,7 @@ file = "my_app.uvl"
 # Constructor: direct path
 # ---------------------------------------------------------------------------
 
+
 class TestDirectPath:
     def test_loads_valid_file(self, tmp_path):
         write_pyproject(tmp_path, FULL_PYPROJECT)
@@ -63,6 +66,7 @@ class TestDirectPath:
 # Constructor: for_product
 # ---------------------------------------------------------------------------
 
+
 class TestForProduct:
     def test_loads_from_product_dir(self, tmp_path):
         write_pyproject(tmp_path, FULL_PYPROJECT)
@@ -77,6 +81,7 @@ class TestForProduct:
 # ---------------------------------------------------------------------------
 # Constructor: for_active_app
 # ---------------------------------------------------------------------------
+
 
 class TestForActiveApp:
     def test_reads_active_app(self, tmp_path, monkeypatch):
@@ -99,6 +104,7 @@ class TestForActiveApp:
 # Properties: [project]
 # ---------------------------------------------------------------------------
 
+
 class TestProjectProperties:
     def test_name(self, tmp_path):
         write_pyproject(tmp_path, FULL_PYPROJECT)
@@ -113,7 +119,7 @@ class TestProjectProperties:
         assert PyprojectReader.for_product(str(tmp_path)).name is None
 
     def test_version_returns_none_when_absent(self, tmp_path):
-        write_pyproject(tmp_path, "[project]\nname = \"app\"\n")
+        write_pyproject(tmp_path, '[project]\nname = "app"\n')
         assert PyprojectReader.for_product(str(tmp_path)).version is None
 
 
@@ -121,14 +127,18 @@ class TestProjectProperties:
 # Properties: features
 # ---------------------------------------------------------------------------
 
+
 class TestFeaturesProperty:
     def test_returns_feature_list(self, tmp_path):
         write_pyproject(tmp_path, FULL_PYPROJECT)
         features = PyprojectReader.for_product(str(tmp_path)).features
-        assert features == ["splent_feature_auth@v1.0.0", "splent_feature_public@v1.0.0"]
+        assert features == [
+            "splent_feature_auth@v1.0.0",
+            "splent_feature_public@v1.0.0",
+        ]
 
     def test_returns_empty_list_when_key_absent(self, tmp_path):
-        write_pyproject(tmp_path, "[project]\nname = \"app\"\n")
+        write_pyproject(tmp_path, '[project]\nname = "app"\n')
         assert PyprojectReader.for_product(str(tmp_path)).features == []
 
     def test_returns_empty_list_for_empty_array(self, tmp_path):
@@ -136,20 +146,21 @@ class TestFeaturesProperty:
         assert PyprojectReader.for_product(str(tmp_path)).features == []
 
     def test_strips_whitespace_from_entries(self, tmp_path):
-        write_pyproject(tmp_path,
-            '[project.optional-dependencies]\nfeatures = ["  auth  ", " public "]\n'
+        write_pyproject(
+            tmp_path,
+            '[project.optional-dependencies]\nfeatures = ["  auth  ", " public "]\n',
         )
         assert PyprojectReader.for_product(str(tmp_path)).features == ["auth", "public"]
 
     def test_skips_blank_entries(self, tmp_path):
-        write_pyproject(tmp_path,
-            '[project.optional-dependencies]\nfeatures = ["auth", "", "  "]\n'
+        write_pyproject(
+            tmp_path, '[project.optional-dependencies]\nfeatures = ["auth", "", "  "]\n'
         )
         assert PyprojectReader.for_product(str(tmp_path)).features == ["auth"]
 
     def test_raises_when_features_not_a_list(self, tmp_path):
-        write_pyproject(tmp_path,
-            '[project.optional-dependencies]\nfeatures = "not-a-list"\n'
+        write_pyproject(
+            tmp_path, '[project.optional-dependencies]\nfeatures = "not-a-list"\n'
         )
         with pytest.raises(ValueError, match="must be a list"):
             PyprojectReader.for_product(str(tmp_path)).features
@@ -158,6 +169,7 @@ class TestFeaturesProperty:
 # ---------------------------------------------------------------------------
 # Properties: [tool.splent]
 # ---------------------------------------------------------------------------
+
 
 class TestSplentConfig:
     def test_uvl_config(self, tmp_path):
@@ -168,9 +180,9 @@ class TestSplentConfig:
         assert uvl["file"] == "my_app.uvl"
 
     def test_uvl_config_empty_when_absent(self, tmp_path):
-        write_pyproject(tmp_path, "[project]\nname = \"app\"\n")
+        write_pyproject(tmp_path, '[project]\nname = "app"\n')
         assert PyprojectReader.for_product(str(tmp_path)).uvl_config == {}
 
     def test_splent_config_empty_when_absent(self, tmp_path):
-        write_pyproject(tmp_path, "[project]\nname = \"app\"\n")
+        write_pyproject(tmp_path, '[project]\nname = "app"\n')
         assert PyprojectReader.for_product(str(tmp_path)).splent_config == {}

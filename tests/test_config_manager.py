@@ -11,6 +11,7 @@ from splent_framework.managers.config_manager import ConfigManager
 # Helpers
 # ---------------------------------------------------------------------------
 
+
 def _make_app():
     return Flask(__name__)
 
@@ -18,6 +19,7 @@ def _make_app():
 # ---------------------------------------------------------------------------
 # load_config — uses splent_framework default config (no product module)
 # ---------------------------------------------------------------------------
+
 
 class TestLoadConfigDefaults:
     def test_development_sets_debug_true(self, monkeypatch):

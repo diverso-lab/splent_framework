@@ -5,15 +5,14 @@ NamespaceManager.init_app is integration-only (touches sys.path and importlib),
 so we test the four extracted static methods in isolation using tmp_path.
 """
 
-import os
 import sys
-import pytest
 from splent_framework.managers.namespace_manager import NamespaceManager
 
 
 # ---------------------------------------------------------------------------
 # _detect_orgs
 # ---------------------------------------------------------------------------
+
 
 class TestDetectOrgs:
     def test_returns_all_subdirectories(self, tmp_path):
@@ -35,6 +34,7 @@ class TestDetectOrgs:
 # ---------------------------------------------------------------------------
 # _ensure_init_files
 # ---------------------------------------------------------------------------
+
 
 class TestEnsureInitFiles:
     def test_creates_init_py_when_missing(self, tmp_path):
@@ -64,6 +64,7 @@ class TestEnsureInitFiles:
 # ---------------------------------------------------------------------------
 # _add_to_syspath
 # ---------------------------------------------------------------------------
+
 
 class TestAddToSyspath:
     def test_adds_src_dirs_to_syspath(self, tmp_path):

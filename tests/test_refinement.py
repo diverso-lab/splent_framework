@@ -1,7 +1,5 @@
 """Tests for the refinement system: registry, parser, and validator."""
 
-import pytest
-
 from splent_framework.refinement.registry import (
     RefinementEntry,
     RefinementRegistry,
@@ -48,11 +46,16 @@ class TestRefinementRegistry:
     def test_multiple_entries(self):
         reg = RefinementRegistry()
         e1 = RefinementEntry(
-            refiner="auth_2fa", base="auth", category="service",
-            target="AuthService", replacement="AuthService2FA",
+            refiner="auth_2fa",
+            base="auth",
+            category="service",
+            target="AuthService",
+            replacement="AuthService2FA",
         )
         e2 = RefinementEntry(
-            refiner="auth_2fa", base="auth", category="template",
+            refiner="auth_2fa",
+            base="auth",
+            category="template",
             target="auth/login.html",
         )
         reg.register(e1)
@@ -68,9 +71,14 @@ class TestRefinementRegistry:
 
     def test_clear(self):
         reg = RefinementRegistry()
-        reg.register(RefinementEntry(
-            refiner="x", base="y", category="service", target="S",
-        ))
+        reg.register(
+            RefinementEntry(
+                refiner="x",
+                base="y",
+                category="service",
+                target="S",
+            )
+        )
         assert len(reg.all_entries()) == 1
         reg.clear()
         assert len(reg.all_entries()) == 0
@@ -90,13 +98,15 @@ class TestParseExtensible:
         assert ext.routes is False
 
     def test_full_declaration(self):
-        ext = parse_extensible({
-            "services": ["AuthenticationService"],
-            "templates": ["auth/login_form.html", "auth/signup_form.html"],
-            "models": ["User"],
-            "hooks": ["layout.anonymous_sidebar"],
-            "routes": True,
-        })
+        ext = parse_extensible(
+            {
+                "services": ["AuthenticationService"],
+                "templates": ["auth/login_form.html", "auth/signup_form.html"],
+                "models": ["User"],
+                "hooks": ["layout.anonymous_sidebar"],
+                "routes": True,
+            }
+        )
         assert ext.services == ["AuthenticationService"]
         assert ext.templates == ["auth/login_form.html", "auth/signup_form.html"]
         assert ext.models == ["User"]
@@ -126,7 +136,9 @@ class TestParseRefinement:
         raw = {
             "refines": "splent_feature_auth",
             "overrides": {
-                "services": [{"target": "AuthService", "replacement": "AuthService2FA"}],
+                "services": [
+                    {"target": "AuthService", "replacement": "AuthService2FA"}
+                ],
                 "templates": [{"target": "auth/login.html"}],
                 "hooks": [{"target": "layout.sidebar"}],
             },
@@ -162,10 +174,14 @@ class TestValidator:
         from splent_framework.refinement.parser import RefinementOverride
 
         errors = validate_refinements(
-            refinements={"auth_2fa": self._ref(
-                "auth",
-                overrides_services=[RefinementOverride("AuthService", "AuthService2FA")],
-            )},
+            refinements={
+                "auth_2fa": self._ref(
+                    "auth",
+                    overrides_services=[
+                        RefinementOverride("AuthService", "AuthService2FA")
+                    ],
+                )
+            },
             extensibles={"auth": self._ext(services=["AuthService"])},
             known_features={"auth", "auth_2fa"},
         )
@@ -175,10 +191,12 @@ class TestValidator:
         from splent_framework.refinement.parser import RefinementOverride
 
         errors = validate_refinements(
-            refinements={"auth_2fa": self._ref(
-                "auth",
-                overrides_services=[RefinementOverride("AuthService", "X")],
-            )},
+            refinements={
+                "auth_2fa": self._ref(
+                    "auth",
+                    overrides_services=[RefinementOverride("AuthService", "X")],
+                )
+            },
             extensibles={"auth": self._ext()},  # empty extensible
             known_features={"auth", "auth_2fa"},
         )
@@ -218,10 +236,12 @@ class TestValidator:
         from splent_framework.refinement.parser import RefinementOverride
 
         errors = validate_refinements(
-            refinements={"auth_2fa": self._ref(
-                "auth",
-                overrides_templates=[RefinementOverride("auth/login.html")],
-            )},
+            refinements={
+                "auth_2fa": self._ref(
+                    "auth",
+                    overrides_templates=[RefinementOverride("auth/login.html")],
+                )
+            },
             extensibles={"auth": self._ext(templates=["auth/login.html"])},
             known_features={"auth", "auth_2fa"},
         )
@@ -231,10 +251,12 @@ class TestValidator:
         from splent_framework.refinement.parser import RefinementModelExtension
 
         errors = validate_refinements(
-            refinements={"auth_2fa": self._ref(
-                "auth",
-                extends_models=[RefinementModelExtension("User", "User2FAMixin")],
-            )},
+            refinements={
+                "auth_2fa": self._ref(
+                    "auth",
+                    extends_models=[RefinementModelExtension("User", "User2FAMixin")],
+                )
+            },
             extensibles={"auth": self._ext(models=["User"])},
             known_features={"auth", "auth_2fa"},
         )
@@ -244,10 +266,12 @@ class TestValidator:
         from splent_framework.refinement.parser import RefinementRouteAddition
 
         errors = validate_refinements(
-            refinements={"auth_2fa": self._ref(
-                "auth",
-                adds_routes=[RefinementRouteAddition("auth", "routes_2fa")],
-            )},
+            refinements={
+                "auth_2fa": self._ref(
+                    "auth",
+                    adds_routes=[RefinementRouteAddition("auth", "routes_2fa")],
+                )
+            },
             extensibles={"auth": self._ext(routes=False)},
             known_features={"auth", "auth_2fa"},
         )
@@ -258,10 +282,12 @@ class TestValidator:
         from splent_framework.refinement.parser import RefinementRouteAddition
 
         errors = validate_refinements(
-            refinements={"auth_2fa": self._ref(
-                "auth",
-                adds_routes=[RefinementRouteAddition("auth", "routes_2fa")],
-            )},
+            refinements={
+                "auth_2fa": self._ref(
+                    "auth",
+                    adds_routes=[RefinementRouteAddition("auth", "routes_2fa")],
+                )
+            },
             extensibles={"auth": self._ext(routes=True)},
             known_features={"auth", "auth_2fa"},
         )
@@ -279,10 +305,12 @@ class TestValidator:
         from splent_framework.refinement.parser import RefinementOverride
 
         errors = validate_refinements(
-            refinements={"x": self._ref(
-                "auth",
-                overrides_services=[RefinementOverride("Svc", "Svc2")],
-            )},
+            refinements={
+                "x": self._ref(
+                    "auth",
+                    overrides_services=[RefinementOverride("Svc", "Svc2")],
+                )
+            },
             extensibles={},  # auth has no extensible declaration
             known_features={"auth", "x"},
         )

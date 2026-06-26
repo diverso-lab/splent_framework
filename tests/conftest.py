@@ -5,6 +5,7 @@ Shared pytest fixtures for splent_framework tests.
 - `app_ctx`     → pushes an app context (needed for db/session operations)
 - `client`      → Flask test client
 """
+
 import pytest
 from flask import Flask
 from splent_framework.db import db as _db

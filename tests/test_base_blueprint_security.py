@@ -8,6 +8,7 @@ assets directory, and verify:
   - Filenames with path traversal sequences → 403
   - Non-existent files → 404
 """
+
 import os
 import pytest
 from flask import Flask
@@ -19,6 +20,7 @@ from splent_framework.blueprints.base_blueprint import BaseBlueprint
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
 
 def make_asset_tree(base: str):
     """Create a small asset tree under base/assets/."""
@@ -42,6 +44,7 @@ def make_asset_tree(base: str):
 # ---------------------------------------------------------------------------
 # Fixtures
 # ---------------------------------------------------------------------------
+
 
 @pytest.fixture
 def feature_dir(tmp_path):
@@ -77,6 +80,7 @@ def client(app):
 # Serving legitimate files
 # ---------------------------------------------------------------------------
 
+
 class TestServeLegitimateFiles:
     def test_serves_js_with_correct_mimetype(self, client):
         resp = client.get("/test_feature/js/app.js")
@@ -101,6 +105,7 @@ class TestServeLegitimateFiles:
 # Security: path traversal blocked
 # ---------------------------------------------------------------------------
 
+
 class TestPathTraversalBlocked:
     def test_traversal_in_filename_blocked(self, client):
         # Attempt to escape assets/js/ via ../
@@ -120,6 +125,7 @@ class TestPathTraversalBlocked:
 # Security: subfolder whitelist enforced
 # ---------------------------------------------------------------------------
 
+
 class TestSubfolderWhitelist:
     def test_invalid_subfolder_returns_404(self, client):
         resp = client.get("/test_feature/templates/base.html")
@@ -138,6 +144,7 @@ class TestSubfolderWhitelist:
 # ---------------------------------------------------------------------------
 # Non-existent files
 # ---------------------------------------------------------------------------
+
 
 class TestNonExistentFiles:
     def test_missing_file_returns_404(self, client):

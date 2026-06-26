@@ -3,8 +3,7 @@ Tests for ErrorHandlerManager.
 """
 
 import types
-import pytest
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 from flask import Flask
 from splent_framework.managers.error_handler_manager import ErrorHandlerManager
 
@@ -12,6 +11,7 @@ from splent_framework.managers.error_handler_manager import ErrorHandlerManager
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
 
 def _make_app():
     app = Flask(__name__)
@@ -22,6 +22,7 @@ def _make_app():
 # ---------------------------------------------------------------------------
 # _import_custom_handlers
 # ---------------------------------------------------------------------------
+
 
 class TestImportCustomHandlers:
     def test_returns_none_when_module_not_found(self, monkeypatch):
@@ -46,6 +47,7 @@ class TestImportCustomHandlers:
 # _get_handler
 # ---------------------------------------------------------------------------
 
+
 class TestGetHandler:
     def _manager_with_handlers(self, handlers_dict):
         mod = types.SimpleNamespace(**handlers_dict)
@@ -55,19 +57,25 @@ class TestGetHandler:
         return manager
 
     def test_returns_custom_handler_when_present(self):
-        custom = lambda app, e: ("custom", 404)
+        def custom(app, e):
+            return ("custom", 404)
+
         manager = self._manager_with_handlers({"handle_404": custom})
         result = manager._get_handler("handle_404", lambda a, e: ("default", 404))
         assert result is custom
 
     def test_returns_fallback_when_custom_missing(self):
-        fallback = lambda app, e: ("default", 404)
+        def fallback(app, e):
+            return ("default", 404)
+
         manager = self._manager_with_handlers({})
         result = manager._get_handler("handle_404", fallback)
         assert result is fallback
 
     def test_returns_fallback_when_no_custom_handlers_module(self):
-        fallback = lambda app, e: ("default", 500)
+        def fallback(app, e):
+            return ("default", 500)
+
         manager = ErrorHandlerManager.__new__(ErrorHandlerManager)
         manager.app = _make_app()
         manager.custom_handlers = None
@@ -78,6 +86,7 @@ class TestGetHandler:
 # ---------------------------------------------------------------------------
 # register_error_handlers + default handlers
 # ---------------------------------------------------------------------------
+
 
 class TestRegisterErrorHandlers:
     def test_registers_500_handler(self, monkeypatch):

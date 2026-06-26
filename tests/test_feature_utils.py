@@ -7,6 +7,7 @@ Covers:
 - Returns [] when [project.optional-dependencies] key is missing
 - Raises RuntimeError on malformed TOML (not silent swallow)
 """
+
 import pytest
 from splent_framework.utils.feature_utils import get_features_from_pyproject
 
@@ -27,7 +28,7 @@ def app_dir(tmp_path):
 class TestGetFeaturesFromPyproject:
     def test_returns_features_list(self, app_dir):
         (app_dir / "pyproject.toml").write_text(
-            '[project.optional-dependencies]\n'
+            "[project.optional-dependencies]\n"
             'features = ["splent_feature_auth@v1.0.0", "splent_feature_public@v1.0.0"]\n'
         )
         result = get_features_from_pyproject()
@@ -35,8 +36,7 @@ class TestGetFeaturesFromPyproject:
 
     def test_returns_empty_list_when_features_key_missing(self, app_dir):
         (app_dir / "pyproject.toml").write_text(
-            '[project.optional-dependencies]\n'
-            'core = ["flask"]\n'
+            '[project.optional-dependencies]\ncore = ["flask"]\n'
         )
         result = get_features_from_pyproject()
         assert result == []
@@ -60,7 +60,7 @@ class TestGetFeaturesFromPyproject:
 
     def test_returns_empty_list_for_empty_features(self, app_dir):
         (app_dir / "pyproject.toml").write_text(
-            '[project.optional-dependencies]\nfeatures = []\n'
+            "[project.optional-dependencies]\nfeatures = []\n"
         )
         result = get_features_from_pyproject()
         assert result == []

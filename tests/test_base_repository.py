@@ -4,6 +4,7 @@ Tests for splent_framework.repositories.BaseRepository
 Uses SQLite in-memory via a minimal Flask app.
 Covers all CRUD methods and edge cases.
 """
+
 import pytest
 from flask import Flask
 from sqlalchemy import String
@@ -16,6 +17,7 @@ from splent_framework.repositories.BaseRepository import BaseRepository
 # ---------------------------------------------------------------------------
 # Minimal model for testing
 # ---------------------------------------------------------------------------
+
 
 class Base(DeclarativeBase):
     pass
@@ -31,6 +33,7 @@ class Widget(_db.Model):
 # ---------------------------------------------------------------------------
 # Fixtures
 # ---------------------------------------------------------------------------
+
 
 @pytest.fixture(scope="function")
 def app():
@@ -59,6 +62,7 @@ def one_widget(repo):
 # ---------------------------------------------------------------------------
 # Tests
 # ---------------------------------------------------------------------------
+
 
 class TestCreate:
     def test_creates_and_returns_instance(self, repo):
@@ -108,6 +112,7 @@ class TestGetOr404:
 
     def test_raises_404_when_not_found(self, repo, app):
         from werkzeug.exceptions import NotFound
+
         with app.test_request_context():
             with pytest.raises(NotFound):
                 repo.get_or_404(9999)

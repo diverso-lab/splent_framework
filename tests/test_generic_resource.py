@@ -2,20 +2,26 @@
 Tests for GenericResource — verifies both Serializer objects and plain
 field lists work correctly as the serializer parameter.
 """
-import json
+
 import pytest
 from flask import Flask
 
 flask_restful = pytest.importorskip("flask_restful")
 Api = flask_restful.Api
 
-from splent_framework.db import db as _db
-from splent_framework.resources.generic_resource import GenericResource, create_resource
+# Imported after importorskip on purpose: generic_resource pulls in
+# flask_restful, so the module must be skipped first when it is absent.
+from splent_framework.db import db as _db  # noqa: E402
+from splent_framework.resources.generic_resource import (  # noqa: E402
+    GenericResource,
+    create_resource,
+)
 
 
 # ---------------------------------------------------------------------------
 # Model fixture
 # ---------------------------------------------------------------------------
+
 
 class Item(_db.Model):
     __tablename__ = "item"
@@ -46,8 +52,8 @@ def client(app):
 # Tests: create_resource with field list
 # ---------------------------------------------------------------------------
 
-class TestCreateResourceWithFieldList:
 
+class TestCreateResourceWithFieldList:
     def test_post_filters_by_allowed_fields(self, app, client):
         api = Api(app)
         ResourceClass = create_resource(Item, ["name"])
@@ -97,7 +103,9 @@ class TestCreateResourceWithFieldList:
             _db.session.commit()
             item_id = item.id
 
-        resp = client.put(f"/items/{item_id}", json={"name": "new", "secret": "changed"})
+        resp = client.put(
+            f"/items/{item_id}", json={"name": "new", "secret": "changed"}
+        )
         assert resp.status_code == 200
 
         with app.app_context():
@@ -121,7 +129,6 @@ class TestCreateResourceWithFieldList:
 
 
 class TestCreateResourceWithNone:
-
     def test_post_with_no_fields_accepts_all(self, app, client):
         api = Api(app)
         ResourceClass = create_resource(Item)
@@ -148,7 +155,6 @@ class TestCreateResourceWithNone:
 
 
 class TestCreateResourceWithSerializer:
-
     def test_works_with_serializer_object(self, app, client):
         from splent_framework.serialisers.serializer import Serializer
 
