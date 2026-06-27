@@ -72,9 +72,15 @@ class LocaleManager:
         if translations_dir not in dirs:
             dirs.append(translations_dir)
 
-            # Babel supports multiple translation directories
-            babel = app.extensions.get("splent_babel")
-            if babel and hasattr(babel, "translation_directories"):
-                babel.translation_directories.append(translations_dir)
+            # flask-babel computes its translation directories ONCE in init_app
+            # (BabelConfiguration.translation_directories) and never re-reads the
+            # config. Features load AFTER Babel is initialised, so we (1) keep the
+            # config in sync and (2) mutate the live BabelConfiguration list
+            # (app.extensions["babel"]) so the new directory actually takes effect.
+            app.config["BABEL_TRANSLATION_DIRECTORIES"] = ";".join(dirs)
+            babel_cfg = app.extensions.get("babel")
+            live = getattr(babel_cfg, "translation_directories", None)
+            if isinstance(live, list) and translations_dir not in live:
+                live.append(translations_dir)
 
             logger.debug("Registered translations: %s", translations_dir)

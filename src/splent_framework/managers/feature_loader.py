@@ -248,6 +248,7 @@ class FeatureIntegrator:
         self._call_init(module, import_name)
         self._apply_service_overrides(import_name)
         self._register_blueprints(module, import_name)
+        self._register_context_vars(module, import_name)
         self._register_translations(module, import_name)
         self._register_commands(import_name)
 
@@ -357,6 +358,19 @@ class FeatureIntegrator:
                 ) from e
         elif self._strict:
             raise FeatureError(f"{import_name} lacks init_feature(app)")
+
+    def _register_context_vars(self, module, import_name: str) -> None:
+        """Collect the feature's ``inject_context_vars`` so the JinjaManager
+        context processor merges its returned dict into every template's context
+        on each request (see docs: framework/template-system, framework/
+        feature-loading). Without this the function is never called.
+        """
+        fn = getattr(module, "inject_context_vars", None)
+        if fn is None:
+            return
+        if not hasattr(self._app, "context_processors"):
+            self._app.context_processors = []
+        self._app.context_processors.append(fn)
 
     def _register_blueprints(self, module, import_name: str) -> None:
         candidates = self._collect_candidate_modules(module, import_name)
