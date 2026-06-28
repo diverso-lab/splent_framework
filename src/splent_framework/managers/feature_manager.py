@@ -121,32 +121,43 @@ class FeatureManager:
     # ------------------------------------------------------------------
 
     def _apply_template_overrides(self, registry) -> None:
-        """Reorder Jinja blueprint template loaders so refiner templates win.
+        """Make refiner templates win over the base feature's same-path templates.
 
-        Flask's DispatchingJinjaLoader searches blueprints in registration order.
-        Since refiners load AFTER their base, their templates would normally lose.
-        We swap the refiner's blueprint ahead of the base's in the internal list.
+        Flask's DispatchingJinjaLoader searches blueprints in REGISTRATION order
+        (first registered wins), and a refiner loads AFTER its base — so the base
+        template would win. We prepend each refiner's template folder to the
+        app's Jinja loader so its override is resolved first.
         """
+        from jinja2 import ChoiceLoader, FileSystemLoader
+
         template_overrides = [
             e for e in registry.all_entries() if e.category == "template"
         ]
         if not template_overrides:
             return
 
+        app = self._app
+        folders: list[str] = []
+        seen: set[str] = set()
         for entry in template_overrides:
-            # Find the refiner's blueprint (convention: refiner registers its own bp)
-            # The refiner's templates are served from its own blueprint template folder.
-            # We need its blueprint to appear BEFORE the base's in the search order.
-            # Flask 3.x uses app.blueprints (ordered dict), and the
-            # DispatchingJinjaLoader iterates app.iter_blueprints() which
-            # returns them in reverse registration order (last registered = first searched).
-            # So the refiner, being loaded after the base, is already searched first.
-            # This means template override works out of the box for same-path templates.
+            short = entry.refiner.replace("splent_feature_", "")
+            bp = app.blueprints.get(short)
+            if bp is None or not bp.template_folder:
+                continue
+            folder = os.path.join(bp.root_path, bp.template_folder)
+            if folder not in seen and os.path.isdir(folder):
+                seen.add(folder)
+                folders.append(folder)
             logger.info(
                 "Template override: %s (from %s, by %s)",
                 entry.target,
                 entry.base,
                 entry.refiner,
+            )
+
+        if folders:
+            app.jinja_env.loader = ChoiceLoader(
+                [FileSystemLoader(folders), app.jinja_env.loader]
             )
 
     def _setup_refinement_registry(self, product_dir: str, ordered: list[str]) -> None:
