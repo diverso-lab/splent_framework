@@ -1,4 +1,5 @@
 from flask import Flask
+from splent_framework.assets.asset_registry import get_assets
 from splent_framework.context.context_manager import build_jinja_context
 from splent_framework.hooks.template_hooks import get_template_hooks
 
@@ -17,3 +18,4 @@ class JinjaManager:
 
     def _register_globals(self):
         self.app.jinja_env.globals["get_template_hooks"] = get_template_hooks
+        self.app.jinja_env.globals["get_assets"] = get_assets

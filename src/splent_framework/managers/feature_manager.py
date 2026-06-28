@@ -62,12 +62,17 @@ class FeatureManager:
             return
         self._registered = True
 
-        # The nav registry is process-global; clear it before loading so the
-        # composed menu reflects ONLY this product's installed features (no
-        # leakage when several products' create_app() run in one interpreter).
+        # The nav and asset registries are process-global; clear them before
+        # loading so the composed menu / injected assets reflect ONLY this
+        # product's installed features (no leakage when several products'
+        # create_app() run in one interpreter).
+        from splent_framework.assets.asset_registry import clear_assets
         from splent_framework.nav.nav_registry import clear_nav_items
+        from splent_framework.settings.settings_schema import clear_settings_schemas
 
         clear_nav_items()
+        clear_assets()
+        clear_settings_schemas()
 
         splent_app = self._require_splent_app()
         product_dir = os.path.join(PathUtils.get_working_dir(), splent_app)
