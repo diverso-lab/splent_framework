@@ -20,6 +20,11 @@ logger = logging.getLogger(__name__)
 # Shared blinker namespace for all SPLENT feature signals
 _splent_ns = Namespace()
 
+# Handlers that connected before their producer defined the signal, keyed by
+# signal name. Flushed by define_signal(), so feature load order doesn't matter
+# (a captcha provider can connect to "comment-submitting" before comments loads).
+_pending: dict = {}
+
 
 def define_signal(name: str, provider: str) -> NamedSignal:
     """Define a feature signal and register it in the signal registry.
@@ -39,6 +44,10 @@ def define_signal(name: str, provider: str) -> NamedSignal:
     """
     signal = _splent_ns.signal(name)
     register_signal(name, signal, provider)
+    # Flush handlers that connected before this signal was defined (a listener
+    # feature that loaded before its producer). Load order is now irrelevant.
+    for fn in _pending.pop(name, []):
+        signal.connect(fn)
     return signal
 
 
@@ -62,14 +71,17 @@ def connect_signal(signal_name: str, listener_feature: str):
     """
 
     def decorator(fn):
+        register_listener(signal_name, listener_feature)
         signal = get_signal(signal_name)
         if signal is not None:
             signal.connect(fn)
-            register_listener(signal_name, listener_feature)
         else:
-            logger.warning(
-                "Signal '%s' not found — handler %s.%s not connected. "
-                "Is the provider feature installed?",
+            # Producer not loaded yet (or absent). Defer the connection: if the
+            # producer's define_signal() runs later it flushes this handler. If
+            # the producer is never installed, the handler simply never fires.
+            _pending.setdefault(signal_name, []).append(fn)
+            logger.debug(
+                "Signal '%s' not defined yet — deferring handler %s.%s.",
                 signal_name,
                 fn.__module__,
                 fn.__name__,
