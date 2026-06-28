@@ -17,7 +17,9 @@ _schemas: dict = {}
 FIELD_TYPES = ("bool", "int", "text", "color", "select")
 
 
-def register_settings(feature: str, title: str, fields: list, icon: str = "sliders") -> None:
+def register_settings(
+    feature: str, title: str, fields: list, icon: str = "sliders"
+) -> None:
     """Declare a feature's admin-editable settings.
 
     Args:

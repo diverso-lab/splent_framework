@@ -19,16 +19,16 @@ from dataclasses import dataclass, field
 # these per column via `field_widgets`; unknown columns fall back to an
 # introspection-derived default chosen by the admin feature.
 WIDGETS = (
-    "text",      # single-line string
+    "text",  # single-line string
     "textarea",  # multi-line plain text
     "richtext",  # WYSIWYG / HTML body
     "number",
     "bool",
     "date",
     "datetime",
-    "select",    # enum / fixed choices
-    "fk",        # foreign key -> related record picker
-    "image",     # media id / upload
+    "select",  # enum / fixed choices
+    "fk",  # foreign key -> related record picker
+    "image",  # media id / upload
     "url",
     "slug",
     "color",
@@ -40,21 +40,23 @@ class AdminResource:
     """Metadata describing how a model is administered in the admin panel."""
 
     model: type
-    name: str                       # url-safe key, e.g. "project"
-    label: str                      # singular human label, e.g. "Project"
-    label_plural: str               # e.g. "Projects"
-    icon: str = "file"              # feather icon name used in the menu
-    group: str = "Content"          # menu section this resource is filed under
-    order: int = 100                # sort order within the group
-    list_columns: list[str] | None = None      # None -> admin auto-picks
+    name: str  # url-safe key, e.g. "project"
+    label: str  # singular human label, e.g. "Project"
+    label_plural: str  # e.g. "Projects"
+    icon: str = "file"  # feather icon name used in the menu
+    group: str = "Content"  # menu section this resource is filed under
+    order: int = 100  # sort order within the group
+    list_columns: list[str] | None = None  # None -> admin auto-picks
     search_fields: list[str] = field(default_factory=list)
     field_widgets: dict[str, str] = field(default_factory=dict)  # column -> WIDGETS
     readonly_fields: list[str] = field(default_factory=list)
-    scope: dict = field(default_factory=dict)            # query filter — lets one shared
+    scope: dict = field(default_factory=dict)  # query filter — lets one shared
     #                                                      table back several menu entries
     #                                                      (e.g. {"collection": "event"})
-    create_defaults: dict = field(default_factory=dict)  # column values forced on create
-    feature: str | None = None      # owning feature short name (provenance)
+    create_defaults: dict = field(
+        default_factory=dict
+    )  # column values forced on create
+    feature: str | None = None  # owning feature short name (provenance)
 
     @property
     def model_name(self) -> str:

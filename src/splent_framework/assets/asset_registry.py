@@ -30,7 +30,13 @@ def register_asset(kind: str, endpoint: str, order: int = 100, **params) -> None
         if a["key"] == key:
             return
     _assets.append(
-        {"key": key, "kind": kind, "endpoint": endpoint, "params": params, "order": order}
+        {
+            "key": key,
+            "kind": kind,
+            "endpoint": endpoint,
+            "params": params,
+            "order": order,
+        }
     )
 
 
