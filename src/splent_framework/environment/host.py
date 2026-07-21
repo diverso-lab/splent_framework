@@ -59,7 +59,17 @@ def get_host_for_selenium_testing() -> str:
     """
     Get the host URL for selenium testing.
 
+    ``SELENIUM_TARGET_URL`` wins when set. It is needed whenever the browser
+    runs somewhere other than the machine running the tests, typically a
+    selenium grid node: the URL is resolved by the browser, so the default
+    ``localhost`` would point the browser at itself instead of at the
+    application. Set it to a host the browser container can reach, such as the
+    web or proxy container name.
+
     Returns:
     str: The host URL for selenium testing.
     """
+    override = os.getenv("SELENIUM_TARGET_URL")
+    if override:
+        return override
     return get_host_for_testing("selenium")
