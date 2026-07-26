@@ -96,6 +96,9 @@ class NamespaceManager:
                 importlib.import_module(org)
                 logger.debug("Namespace '%s' registered.", org)
             except (ImportError, ModuleNotFoundError) as e:
-                logger.error(
-                    "Failed to import namespace '%s': %s", org, e, exc_info=True
-                )
+                # Recoverable and routine: the CLI container ships the framework
+                # but not the features, which are installed in the product's web
+                # container, so their namespace is legitimately absent there.
+                # Callers carry on regardless, and a stack trace at error level
+                # reads like a crash while burying the real output below it.
+                logger.warning("Namespace '%s' is not importable here: %s", org, e)
