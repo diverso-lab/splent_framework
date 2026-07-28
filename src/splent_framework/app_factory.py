@@ -26,6 +26,7 @@ from splent_framework.managers.error_handler_manager import ErrorHandlerManager
 from splent_framework.managers.jinja_manager import JinjaManager
 from splent_framework.managers.locale_manager import LocaleManager
 from splent_framework.managers.feature_manager import FeatureManager
+from splent_framework.managers.proxy_manager import ProxyManager
 
 logger = logging.getLogger(__name__)
 
@@ -39,6 +40,10 @@ _PIPELINE = [
             app, kw.get("config_name", "development")
         ),
     ),
+    # Straight after config, because everything that reads a client address
+    # (rate limits, audit trails, logs) has to see the same answer, and the
+    # answer is decided by the WSGI middleware rather than by any of them.
+    ("proxies", lambda app, **kw: ProxyManager.init_app(app)),
     ("database", lambda app, **kw: MigrationManager(app)),
     ("logging", lambda app, **kw: LoggingManager(app).setup_logging()),
     (
