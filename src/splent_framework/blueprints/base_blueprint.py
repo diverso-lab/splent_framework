@@ -128,7 +128,14 @@ class BaseBlueprint(Blueprint):
         return None, None
 
     def send_file(self, subfolder, filename):
-        allowed_subfolders = {"js", "css", "dist"}
+        # "vendor" is where a feature keeps a third-party library it ships
+        # itself. Products run in places where a CDN is a dependency that
+        # fails on someone else's bad day, so shipping the file is the
+        # policy, and it needs somewhere to live that is neither the
+        # feature's own js/ nor its build output. The traversal guard below
+        # still applies, so this widens where assets may live and not what
+        # may be reached.
+        allowed_subfolders = {"js", "css", "dist", "vendor"}
         if subfolder not in allowed_subfolders:
             abort(404)
 
