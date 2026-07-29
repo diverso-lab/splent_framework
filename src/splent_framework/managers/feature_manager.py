@@ -66,13 +66,20 @@ class FeatureManager:
         # loading so the composed menu / injected assets reflect ONLY this
         # product's installed features (no leakage when several products'
         # create_app() run in one interpreter).
+        # The file access registry is cleared for a stronger reason: a stale
+        # granting resolver left by another product would widen access to
+        # protected files rather than merely leak UI.
         from splent_framework.assets.asset_registry import clear_assets
         from splent_framework.nav.nav_registry import clear_nav_items
+        from splent_framework.services.file_access import (
+            clear_file_access_resolvers,
+        )
         from splent_framework.settings.settings_schema import clear_settings_schemas
 
         clear_nav_items()
         clear_assets()
         clear_settings_schemas()
+        clear_file_access_resolvers()
 
         splent_app = self._require_splent_app()
         product_dir = os.path.join(PathUtils.get_working_dir(), splent_app)
