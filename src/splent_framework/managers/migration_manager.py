@@ -124,7 +124,14 @@ class MigrationManager:
         try:
             spec = importlib.util.find_spec(f"splent_io.{base_name}")
             if spec and spec.origin:
-                return os.path.join(os.path.dirname(spec.origin), "migrations")
+                mdir = os.path.join(os.path.dirname(spec.origin), "migrations")
+                # The package resolving does not mean the directory is there:
+                # features without models (light archetypes) ship no migrations.
+                # Returning a non-existent path makes alembic fail with a raw
+                # "Path doesn't exist ... use the 'init' command" error instead
+                # of the caller's clean "no migrations directory" message.
+                if os.path.isdir(mdir):
+                    return mdir
         except (ModuleNotFoundError, ValueError):
             pass
         return None

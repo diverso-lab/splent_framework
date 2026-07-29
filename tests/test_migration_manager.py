@@ -137,6 +137,48 @@ class TestGetFeatureMigrationDir:
         )
         assert result is not None
 
+    def test_importlib_fallback_requires_the_directory_to_exist(
+        self, feature_workspace_no_migrations, tmp_path, monkeypatch
+    ):
+        """An installed feature without models ships no migrations/ directory.
+
+        Returning the path anyway made alembic fail with a raw "Path doesn't
+        exist ... use the 'init' command" error instead of the caller's clean
+        "no migrations directory" message.
+        """
+        from unittest.mock import MagicMock
+
+        import splent_framework.managers.migration_manager as mm
+
+        pkg_dir = tmp_path / "site-packages" / "splent_io" / "splent_feature_theme"
+        pkg_dir.mkdir(parents=True)
+        (pkg_dir / "__init__.py").write_text("")
+
+        spec = MagicMock()
+        spec.origin = str(pkg_dir / "__init__.py")
+        monkeypatch.setattr(mm.importlib.util, "find_spec", lambda name: spec)
+
+        result = mm.MigrationManager.get_feature_migration_dir("splent_feature_theme")
+        assert result is None
+
+    def test_importlib_fallback_returns_existing_directory(
+        self, feature_workspace_no_migrations, tmp_path, monkeypatch
+    ):
+        from unittest.mock import MagicMock
+
+        import splent_framework.managers.migration_manager as mm
+
+        pkg_dir = tmp_path / "site-packages" / "splent_io" / "splent_feature_auth"
+        (pkg_dir / "migrations").mkdir(parents=True)
+        (pkg_dir / "__init__.py").write_text("")
+
+        spec = MagicMock()
+        spec.origin = str(pkg_dir / "__init__.py")
+        monkeypatch.setattr(mm.importlib.util, "find_spec", lambda name: spec)
+
+        result = mm.MigrationManager.get_feature_migration_dir("splent_feature_auth")
+        assert result == str(pkg_dir / "migrations")
+
 
 # ---------------------------------------------------------------------------
 # Tests: get_all_feature_migration_dirs
