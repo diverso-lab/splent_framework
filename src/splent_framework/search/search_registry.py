@@ -38,6 +38,7 @@ def register_search_source(
     fetch,
     resolve,
     find=None,
+    resolve_many=None,
     order: int = 100,
 ) -> None:
     """Declare that this feature has material worth searching.
@@ -65,6 +66,14 @@ def register_search_source(
             search engine installed, or whose engine is down. Same return
             shape as ``resolve``. A source that omits it simply contributes
             nothing when there is no index.
+        resolve_many: optional ``(doc_ids, user) -> dict[doc_id, result]``,
+            answering a whole page of candidates at once and leaving out
+            what this reader may not see. Worth implementing, because a
+            search asks about far more candidates than it shows: a
+            resolver called in a loop turns one query into hundreds, and
+            the time it takes then depends on how much withheld material
+            matched, which is a signal a reader should not be able to
+            measure. Falls back to ``resolve`` per id when absent.
         order: lower sorts first when results are grouped by source.
     """
     _sources[key] = {
@@ -72,6 +81,7 @@ def register_search_source(
         "label": label,
         "fetch": fetch,
         "resolve": resolve,
+        "resolve_many": resolve_many,
         "find": find,
         "order": order,
     }
@@ -102,6 +112,42 @@ def resolve_search_hit(key: str, doc_id, user):
             "search resolver for %r failed on %r; dropping the hit", key, doc_id
         )
         return None
+
+
+def resolve_search_hits(key: str, doc_ids, user) -> dict:
+    """Turn a page of candidates into the results this reader may see.
+
+    Returns ``{doc_id: result}`` holding only what survived, so the caller
+    can keep the engine's ranking by walking ``doc_ids`` and looking each
+    one up. A source that registered ``resolve_many`` answers in one go;
+    otherwise this asks ``resolve`` per id, which is correct but costs a
+    query per candidate.
+
+    Deny by default all the way through: an unknown source answers nothing,
+    a batch resolver that raises answers nothing, and a single resolver
+    that raises drops only its own candidate.
+    """
+    source = _sources.get(key)
+    if source is None:
+        return {}
+
+    batch = source.get("resolve_many")
+    if batch is not None:
+        try:
+            answered = batch(list(doc_ids), user) or {}
+        except Exception:
+            current_app.logger.exception(
+                "search batch resolver for %r failed; dropping the whole page", key
+            )
+            return {}
+        return {doc_id: result for doc_id, result in answered.items() if result}
+
+    resolved = {}
+    for doc_id in doc_ids:
+        result = resolve_search_hit(key, doc_id, user)
+        if result:
+            resolved[doc_id] = result
+    return resolved
 
 
 def clear_search_sources() -> None:
