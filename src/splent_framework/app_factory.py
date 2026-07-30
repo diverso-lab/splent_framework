@@ -20,6 +20,7 @@ from flask import Flask
 from splent_framework.managers.namespace_manager import NamespaceManager
 from splent_framework.managers.config_manager import ConfigManager
 from splent_framework.managers.migration_manager import MigrationManager
+from splent_framework.managers.csrf_manager import CSRFManager
 from splent_framework.managers.session_manager import SessionManager
 from splent_framework.managers.logging_manager import LoggingManager
 from splent_framework.managers.error_handler_manager import ErrorHandlerManager
@@ -59,6 +60,10 @@ _PIPELINE = [
         ).register_features(),
     ),
     ("sessions", lambda app, **kw: SessionManager(app)),
+    # After the session, because the token is bound to it, and after the
+    # features, so a feature that needs to exempt an endpoint has already
+    # registered it.
+    ("csrf", lambda app, **kw: CSRFManager(app)),
 ]
 
 

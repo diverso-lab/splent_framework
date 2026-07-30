@@ -186,3 +186,40 @@ class TestLinksThatLeaveTheSite:
 
         assert "target=" not in render_markdown(written)
         assert 'target="_blank"' in render_markdown(written, True)
+
+
+class TestAutolinkingDoesNotInventHostnames:
+    """linkify's fuzzy mode reads any dotted word as a hostname when the
+    last part looks like a TLD, and .py, .sh and .md all are.
+
+    On a course wiki that is not a cosmetic problem. Measured on the real
+    corpus: 72 pages and 21 invented hostnames, the Vagrant tutorial of the
+    current year included. readme.md and provision.sh resolve today to
+    somebody else's website, so a wiki students trust was handing them to a
+    third party, and every one of those names is registrable by anyone.
+    """
+
+    @pytest.mark.parametrize(
+        "source",
+        [
+            "edita provision.sh con tu editor",
+            "el fichero views.py del proyecto",
+            "mira el README.md",
+            "ejecuta locustfile.py",
+        ],
+    )
+    def test_a_filename_stays_a_filename(self, source):
+        assert "<a " not in render_markdown(source)
+
+    def test_a_written_out_url_still_becomes_a_link(self):
+        html = render_markdown("la documentación en https://vagrantup.com")
+        assert 'href="https://vagrantup.com"' in html
+
+    def test_an_explicit_markdown_link_is_untouched(self):
+        html = render_markdown("[el manual](https://vagrantup.com)")
+        assert 'href="https://vagrantup.com"' in html
+
+    def test_an_email_address_is_not_autolinked_either(self):
+        """Same rule, same reason: a dotted word is not an address because
+        it has a dot in it."""
+        assert "<a " not in render_markdown("escribe a profe@us.es")

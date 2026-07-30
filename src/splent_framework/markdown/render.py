@@ -147,7 +147,7 @@ def build_renderer() -> MarkdownIt:
     anchors so a long page can be linked to by section, definition lists,
     footnotes and task lists.
     """
-    return (
+    renderer = (
         MarkdownIt(
             "gfm-like",
             {
@@ -162,6 +162,29 @@ def build_renderer() -> MarkdownIt:
         .use(footnote_plugin)
         .use(tasklists_plugin)
     )
+
+    # Autolink a URL, not anything with a dot in it.
+    #
+    # linkify's "fuzzy" mode treats bare words as hostnames when the last
+    # part looks like a TLD, and .py, .sh and .md are all real TLDs. In a
+    # course wiki that is catastrophic: provision.sh, views.py, README.md and
+    # locustfile.py are what the material is about, and they were being
+    # rendered as links to http://provision.sh. Measured on the real corpus:
+    # 72 pages, 21 distinct invented hostnames, including the Vagrant
+    # tutorial of the current year.
+    #
+    # Worse than a dead link. readme.md and provision.sh resolve today to
+    # somebody else's website, so a wiki students trust was sending them to
+    # a third party, and every one of those names is registrable by anyone.
+    #
+    # This also stops "www.github.com" and "example.com" autolinking, since
+    # linkify treats all schema-less text as one case. Measured before
+    # choosing: across 1246 migrated pages there is exactly one bare www.
+    # address, against 140 pages carrying a bare dot-name, nearly all of
+    # them source files. Written-out URLs with a scheme still autolink, and
+    # an author who wants a link can write one.
+    renderer.linkify.set({"fuzzy_link": False, "fuzzy_email": False})
+    return renderer
 
 
 _MARKDOWN = build_renderer()
