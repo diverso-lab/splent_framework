@@ -58,6 +58,38 @@ def _formatter():
     return HtmlFormatter(nowrap=True, classprefix=TOKEN_PREFIX)
 
 
+def _quieten(lexer) -> None:
+    """Stop a lexer emitting markup for things that are never coloured.
+
+    Pygments writes a span for every token it produces, whitespace
+    included, and whitespace has no colour in any palette. A five-line
+    shell block came out carrying eighteen ``<span class="tok-w"> </span>``
+    that said nothing, on 382 pages. Whitespace is folded into plain text,
+    which Pygments emits bare, and adjacent plain runs are then merged so a
+    line of ordinary words is one string rather than a dozen.
+
+    Filters are attached once per lexer instance, and a fresh instance is
+    built per block, so this cannot accumulate.
+    """
+    try:
+        from pygments.filter import Filter
+        from pygments.filters import TokenMergeFilter
+        from pygments.token import Text, Whitespace
+
+        class WhitespaceIsText(Filter):
+            def filter(self, _lexer, stream):
+                for token, value in stream:
+                    yield (Text if token is Whitespace else token), value
+
+        lexer.add_filter(WhitespaceIsText())
+        lexer.add_filter(TokenMergeFilter())
+    except Exception:
+        # Nothing here changes what the code says, only how much markup it
+        # takes to say it, so a Pygments that has moved on is not a reason
+        # to lose the highlighting.
+        logger.exception("could not attach the token filters; highlighting anyway")
+
+
 def highlight_code(code: str, language: str | None, _attrs=None) -> str:
     """One code block as HTML, or "" to let markdown-it escape it itself.
 
@@ -87,6 +119,8 @@ def highlight_code(code: str, language: str | None, _attrs=None) -> str:
     except Exception:
         logger.exception("could not load a lexer for %r; rendering it plainly", name)
         return ""
+
+    _quieten(lexer)
 
     try:
         return highlight(code, lexer, _formatter())

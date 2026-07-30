@@ -49,6 +49,13 @@ class Config:
         self.BABEL_SUPPORTED_LOCALES = _locales(
             os.getenv("BABEL_SUPPORTED_LOCALES", ""), self.BABEL_DEFAULT_LOCALE
         )
+        # Whether a reader's browser gets to override the language above.
+        # Off by default: a site built for an institution speaks that
+        # institution's language, and the switcher is how a reader asks for
+        # another one.
+        self.BABEL_NEGOTIATE_FROM_HEADER = os.getenv(
+            "BABEL_NEGOTIATE_FROM_HEADER", ""
+        ).strip().lower() in {"1", "true", "yes", "on"}
 
 
 class DevelopmentConfig(Config):

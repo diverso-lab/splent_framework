@@ -46,6 +46,39 @@ class TestTheProductsDefaultIsHonoured:
         assert app.config["BABEL_SUPPORTED_LOCALES"] == ["en"]
 
 
+class TestTheProductDecidesBeforeTheBrowserDoes:
+    """A site built for an institution speaks that institution's language.
+
+    Found by looking: a headless Chrome asking for en-US was served an
+    English interface wrapped around Spanish course material, on a wiki
+    whose .env says Spanish. That is also what happens to a student whose
+    laptop came set up in English, and to the person running the site, who
+    sets the language and then finds it answering in another one depending
+    on whose browser is open.
+    """
+
+    def test_a_browser_asking_for_english_still_gets_the_products_language(self):
+        app = make_app(default="es", supported=("es", "en"))
+        with app.test_request_context("/", headers={"Accept-Language": "en-US,en"}):
+            assert current_locale() == "es"
+
+    def test_the_switcher_still_wins(self):
+        """A reader who asked is not overruled by the product."""
+        app = make_app(default="es", supported=("es", "en"))
+        with app.test_request_context("/", headers={"Accept-Language": "en-US"}):
+            from flask import session
+
+            session["locale"] = "en"
+            assert current_locale() == "en"
+
+    def test_a_product_can_hand_the_choice_back_to_the_browser(self):
+        """A marketplace, or any site with no home country."""
+        app = make_app(default="es", supported=("es", "en"))
+        app.config["BABEL_NEGOTIATE_FROM_HEADER"] = True
+        with app.test_request_context("/", headers={"Accept-Language": "en-US,en"}):
+            assert current_locale() == "en"
+
+
 class TestTheReadersChoiceIsChecked:
     def test_a_supported_choice_wins_over_the_header(self):
         app = make_app()

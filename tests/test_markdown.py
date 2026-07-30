@@ -67,8 +67,24 @@ class TestTheAllowlist:
 
 class TestHighlighting:
     def test_a_tagged_block_is_highlighted(self):
-        html = render_markdown("``` bash\nvagrant up\n```")
+        """The comment, not the command: `vagrant up` is two ordinary words
+        to a shell lexer, and colouring them would be inventing meaning."""
+        html = render_markdown("``` bash\nvagrant up  # levanta la maquina\n```")
         assert TOKEN_PREFIX in html
+
+    def test_whitespace_does_not_become_markup(self):
+        """Pygments writes a span for every token it produces, whitespace
+        included, and whitespace has no colour in any palette. Five lines of
+        shell came out carrying eighteen spans that said nothing, on 382
+        pages."""
+        html = render_markdown("``` bash\nvagrant init ubuntu/trusty32\n```")
+        assert "tok-w" not in html
+
+    def test_a_line_of_plain_words_stays_one_string(self):
+        """Adjacent plain runs are merged, so an ordinary command line is not
+        broken into a dozen fragments by the markup around it."""
+        html = render_markdown("``` bash\nvagrant init ubuntu/trusty32  # x\n```")
+        assert "vagrant init ubuntu/trusty32" in html
 
     def test_the_language_class_survives_highlighting(self):
         """It is what the markup says the block is, and a formatter that

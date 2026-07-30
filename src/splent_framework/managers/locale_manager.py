@@ -42,7 +42,26 @@ def get_locale():
     if locale and locale in supported:
         return locale
 
-    # 2. Accept-Language header negotiation
+    # 2. The language the product says it speaks.
+    #
+    #    Ahead of the Accept-Language header, and off by default, because a
+    #    product line builds sites for institutions: a course wiki written in
+    #    Spanish is a Spanish site, and answering a browser configured in
+    #    English with an English interface wrapped around Spanish material
+    #    serves nobody. It also surprises the people who run it, who set the
+    #    language in the .env and then find the site answering in another one
+    #    depending on whose laptop is open.
+    #
+    #    Readers who want the other language are not stuck: the switcher puts
+    #    their choice in the session, which is step 1 and beats this.
+    #
+    #    A product that genuinely wants the browser to decide, a marketplace
+    #    or a public site with no home country, sets
+    #    BABEL_NEGOTIATE_FROM_HEADER.
+    if not current_app.config.get("BABEL_NEGOTIATE_FROM_HEADER", False):
+        return current_app.config.get("BABEL_DEFAULT_LOCALE", "en")
+
+    # 3. Accept-Language header negotiation
     return request.accept_languages.best_match(supported)
 
 
