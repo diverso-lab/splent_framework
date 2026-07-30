@@ -139,3 +139,50 @@ class TestEmptyBodies:
     @pytest.mark.parametrize("body", ["", None])
     def test_nothing_renders_as_nothing(self, body):
         assert render_markdown(body) == ""
+
+
+class TestLinksThatLeaveTheSite:
+    """A wiki is a place a reader keeps their position in.
+
+    Following a reference to a manual is checking something, not leaving,
+    and taking the page away loses their place in a document they were
+    halfway through. Off by default here: it is a judgement about the
+    material, and the feature that owns the material makes it.
+    """
+
+    def test_off_by_default(self):
+        html = render_markdown("[manual](https://vagrantup.com)")
+        assert "target=" not in html
+
+    def test_an_external_link_opens_beside_the_page(self):
+        html = render_markdown("[manual](https://vagrantup.com)", True)
+        assert 'target="_blank"' in html
+
+    def test_a_link_within_the_wiki_does_not(self):
+        """Everything a stored body writes about its own material is a path,
+        so having a host is the same question as being somewhere else."""
+        html = render_markdown("[lab 5](/cursos/egc/pagina/lab-5)", True)
+        assert "target=" not in html
+
+    def test_it_still_carries_the_rel_that_makes_it_safe(self):
+        """Without it the page opened in the new tab can reach back through
+        window.opener."""
+        html = render_markdown("[manual](https://vagrantup.com)", True)
+        assert "noopener" in html
+
+    def test_raw_html_links_in_a_migrated_body_are_marked_too(self):
+        """Bodies migrated from another wiki write their links as HTML, and
+        those never pass through markdown-it's link renderer."""
+        html = render_markdown('<a href="https://vagrantup.com">manual</a>', True)
+        assert 'target="_blank"' in html
+
+    def test_an_author_cannot_choose_where_their_link_opens(self):
+        """target is not on the allowlist, so a stored body saying _self, or
+        naming a frame, loses it in the sanitising step. The product decides
+        for every link on the page or for none, which is the point of the
+        setting: one page behaving differently from the rest reads as a bug
+        to the reader and cannot be turned off by whoever runs the site."""
+        written = '<a href="https://x.org" target="_self">x</a>'
+
+        assert "target=" not in render_markdown(written)
+        assert 'target="_blank"' in render_markdown(written, True)

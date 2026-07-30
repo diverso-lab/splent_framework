@@ -19,6 +19,7 @@
 # because we produced them.
 
 import logging
+import re
 
 import nh3
 from markdown_it import MarkdownIt
@@ -186,21 +187,59 @@ ALLOWED_INPUT_VALUES = {"input": {"type": {"checkbox"}}}
 ALLOWED_URL_SCHEMES = {"http", "https", "mailto"}
 
 
-def render_markdown(body_md: str) -> Markup:
+# A link that leaves the site. Absolute http(s) only: everything a stored
+# body writes about its own material is a path, so "has a host" and "is
+# somewhere else" are the same question here, and asking it this way does
+# not need to know what host the site is served under, which changes
+# between development, staging and the day a wiki moves domain.
+_EXTERNAL_LINK = re.compile(r'<a\s+([^>]*\bhref="https?://[^"]*"[^>]*)>', re.IGNORECASE)
+
+
+def _open_in_a_new_tab(html: str) -> str:
+    """Mark links that leave the site so they open beside it, not over it.
+
+    Applied after sanitising rather than before, for two reasons. nh3
+    guarantees well-formed, quoted attributes, which is what makes matching
+    them safe at all; and ``target="_blank"`` is a constant written here
+    rather than anything that came out of a stored body, so adding it past
+    the allowlist grants nothing to whoever wrote the page.
+
+    nh3 already puts ``rel="noopener noreferrer"`` on every link it emits,
+    which is the other half of this: without it the page opened in the new
+    tab can reach back through window.opener.
+    """
+
+    def mark(match):
+        attributes = match.group(1)
+        if "target=" in attributes.lower():
+            return match.group(0)
+        return f'<a {attributes} target="_blank">'
+
+    return _EXTERNAL_LINK.sub(mark, html)
+
+
+def render_markdown(body_md: str, external_links_new_tab: bool = False) -> Markup:
     """A stored body as HTML a reader can be shown.
 
     Rendered here rather than in a template because the sanitising step is
     not optional: a body may be written by staff today and have been
     migrated yesterday from a wiki anyone with an account could edit, and
     marking it safe without cleaning it would run whatever it contains.
+
+    ``external_links_new_tab`` sends links that leave the site to a tab of
+    their own. Off here and decided by the caller, because it is a judgement
+    about the material rather than about markdown: a wiki is a place a
+    reader keeps their position in while following a reference out, and a
+    news site is a place they are meant to leave.
     """
     html = _MARKDOWN.render(body_md or "")
-    return Markup(
-        nh3.clean(
-            html,
-            tags=ALLOWED_TAGS,
-            attributes=ALLOWED_ATTRIBUTES,
-            tag_attribute_values=ALLOWED_INPUT_VALUES,
-            url_schemes=ALLOWED_URL_SCHEMES,
-        )
+    cleaned = nh3.clean(
+        html,
+        tags=ALLOWED_TAGS,
+        attributes=ALLOWED_ATTRIBUTES,
+        tag_attribute_values=ALLOWED_INPUT_VALUES,
+        url_schemes=ALLOWED_URL_SCHEMES,
     )
+    if external_links_new_tab:
+        cleaned = _open_in_a_new_tab(cleaned)
+    return Markup(cleaned)
