@@ -160,9 +160,7 @@ class TestLocales:
         assert cfg.BABEL_DEFAULT_LOCALE == "en"
         assert cfg.BABEL_SUPPORTED_LOCALES == ["en"]
 
-    def test_the_supported_list_keeps_the_order_it_was_written_in(
-        self, monkeypatch
-    ):
+    def test_the_supported_list_keeps_the_order_it_was_written_in(self, monkeypatch):
         """A switcher renders them in this order, and the first is what a
         reader who asked for nothing gets."""
         monkeypatch.setenv("BABEL_DEFAULT_LOCALE", "es")
