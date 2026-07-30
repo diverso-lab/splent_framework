@@ -139,3 +139,43 @@ class TestProductionConfig:
         monkeypatch.setenv("MARIADB_TEST_DATABASE", "test_db")
         cfg = ProductionConfig()
         assert "test_db" not in cfg.SQLALCHEMY_DATABASE_URI
+
+
+class TestLocales:
+    """What language a product speaks is configuration of the product.
+
+    LocaleManager has always read these two keys from app.config, and until
+    now nothing put them there, so BABEL_DEFAULT_LOCALE=es in a product's
+    .env changed nothing and every product answered in English.
+    """
+
+    def test_the_default_locale_comes_from_the_environment(self, monkeypatch):
+        monkeypatch.setenv("BABEL_DEFAULT_LOCALE", "es")
+        assert Config().BABEL_DEFAULT_LOCALE == "es"
+
+    def test_english_when_the_product_says_nothing(self, monkeypatch):
+        monkeypatch.delenv("BABEL_DEFAULT_LOCALE", raising=False)
+        monkeypatch.delenv("BABEL_SUPPORTED_LOCALES", raising=False)
+        cfg = Config()
+        assert cfg.BABEL_DEFAULT_LOCALE == "en"
+        assert cfg.BABEL_SUPPORTED_LOCALES == ["en"]
+
+    def test_the_supported_list_keeps_the_order_it_was_written_in(
+        self, monkeypatch
+    ):
+        """A switcher renders them in this order, and the first is what a
+        reader who asked for nothing gets."""
+        monkeypatch.setenv("BABEL_DEFAULT_LOCALE", "es")
+        monkeypatch.setenv("BABEL_SUPPORTED_LOCALES", "es, en")
+        assert Config().BABEL_SUPPORTED_LOCALES == ["es", "en"]
+
+    def test_the_default_is_always_among_the_supported_ones(self, monkeypatch):
+        """A product that names a default and forgets the list still works."""
+        monkeypatch.setenv("BABEL_DEFAULT_LOCALE", "es")
+        monkeypatch.setenv("BABEL_SUPPORTED_LOCALES", "en")
+        assert Config().BABEL_SUPPORTED_LOCALES == ["es", "en"]
+
+    def test_an_empty_list_falls_back_to_the_default_alone(self, monkeypatch):
+        monkeypatch.setenv("BABEL_DEFAULT_LOCALE", "es")
+        monkeypatch.setenv("BABEL_SUPPORTED_LOCALES", "  ,  ")
+        assert Config().BABEL_SUPPORTED_LOCALES == ["es"]

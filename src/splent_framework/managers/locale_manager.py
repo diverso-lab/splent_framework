@@ -9,16 +9,18 @@ Configuration (in product config.py or .env):
     BABEL_SUPPORTED_LOCALES — list of enabled locales (default: ["en"])
 
 Locale selection priority:
-    1. URL prefix (/es/login) if BABEL_URL_PREFIX is True
-    2. Session key "locale"
-    3. Accept-Language header
-    4. BABEL_DEFAULT_LOCALE
+    1. Session key "locale", when it names a supported locale
+    2. Accept-Language header
+    3. BABEL_DEFAULT_LOCALE
+
+Templates get ``html_lang``, ``current_locale`` and ``supported_locales``
+from here, so a theme never has to work the active language out for itself.
 """
 
 import logging
 import os
 
-from flask import request, session
+from flask import current_app, has_request_context, request, session
 from flask_babel import Babel
 
 logger = logging.getLogger(__name__)
@@ -28,16 +30,47 @@ _babel: Babel | None = None
 
 def get_locale():
     """Select the best locale for the current request."""
-    # 1. Explicit session override (set by a language switcher)
+    supported = current_app.config.get("BABEL_SUPPORTED_LOCALES", ["en"])
+
+    # 1. Explicit session override (set by a language switcher).
+    #    Checked against what the product offers rather than trusted: the
+    #    session is writable by any feature and survives a product dropping a
+    #    language, so an unchecked value here would ask Babel for a catalog
+    #    that is not there and answer in the default while the switcher kept
+    #    highlighting the language nobody is reading.
     locale = session.get("locale")
-    if locale:
+    if locale and locale in supported:
         return locale
 
     # 2. Accept-Language header negotiation
-    from flask import current_app
-
-    supported = current_app.config.get("BABEL_SUPPORTED_LOCALES", ["en"])
     return request.accept_languages.best_match(supported)
+
+
+def current_locale() -> str:
+    """The locale in force, as a string, always answerable.
+
+    Falls back to the product's default outside a request, where there is no
+    header to negotiate and no session to read, so a template rendered offline
+    (a mail body, a generated page) still states a language.
+    """
+    default = current_app.config.get("BABEL_DEFAULT_LOCALE", "en")
+    if not has_request_context():
+        return default
+    from flask_babel import get_locale as babel_locale
+
+    return str(babel_locale() or default)
+
+
+def html_lang() -> str:
+    """The locale in force, spelled for an HTML ``lang`` attribute.
+
+    Babel writes a locale with an underscore (``pt_BR``); BCP 47, which is
+    what ``lang`` takes, uses a hyphen (``pt-BR``). The difference matters to
+    a screen reader choosing a voice and to a browser offering to translate
+    the page, and it is the kind of detail every theme would otherwise have to
+    get right on its own.
+    """
+    return current_locale().replace("_", "-")
 
 
 class LocaleManager:
@@ -52,6 +85,20 @@ class LocaleManager:
         # Store reference for feature translation directory registration
         app.extensions["splent_babel"] = _babel
         app.extensions["splent_translation_dirs"] = []
+
+        # Every page needs the active language in its <html> tag, and it is
+        # this manager that decides what the active language is. Leaving each
+        # theme to work it out meant the one variable the base template asked
+        # for, html_lang, was defined by nobody: every product declared
+        # English in its markup for as long as themes have existed, however
+        # loudly the rest of the page spoke Spanish.
+        @app.context_processor
+        def inject_locale():
+            return {
+                "html_lang": html_lang(),
+                "current_locale": current_locale(),
+                "supported_locales": app.config.get("BABEL_SUPPORTED_LOCALES", ["en"]),
+            }
 
         logger.debug(
             "LocaleManager initialised (default=%s, supported=%s)",

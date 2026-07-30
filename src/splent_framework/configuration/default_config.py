@@ -10,6 +10,21 @@ def _build_db_uri(db_name_env: str, db_name_default: str) -> str:
     )
 
 
+def _locales(raw: str, default: str) -> list[str]:
+    """The languages a product offers, from a comma separated list.
+
+    The default locale is always among them, first, so a product that names
+    a default and forgets the list still works and the language it says it
+    speaks is the one it falls back to. Order is kept as written, because a
+    switcher renders it in that order and the first is the one a reader who
+    asked for nothing gets.
+    """
+    codes = [code.strip() for code in (raw or "").split(",") if code.strip()]
+    if default and default not in codes:
+        codes.insert(0, default)
+    return codes or ["en"]
+
+
 class Config:
     # WARNING: override SECRET_KEY via env var in all non-development environments
     SECRET_KEY = os.getenv("SECRET_KEY", "dev_test_key_1234567890abcdefghijklmnopqrstu")
@@ -22,6 +37,18 @@ class Config:
     def __init__(self):
         # Resolved at instantiation time so runtime env changes are picked up
         self.TIMEZONE = os.getenv("TIMEZONE", "Europe/Madrid")
+
+        # What language the product speaks. LocaleManager has always read
+        # these from app.config and nothing ever put them there, so every
+        # product answered in English no matter what its .env said, and the
+        # theme's language switcher never appeared because it only shows
+        # with more than one locale. The language a wiki is taught in is
+        # configuration of the product, not of a feature, so it belongs
+        # here next to the timezone.
+        self.BABEL_DEFAULT_LOCALE = os.getenv("BABEL_DEFAULT_LOCALE", "en").strip()
+        self.BABEL_SUPPORTED_LOCALES = _locales(
+            os.getenv("BABEL_SUPPORTED_LOCALES", ""), self.BABEL_DEFAULT_LOCALE
+        )
 
 
 class DevelopmentConfig(Config):

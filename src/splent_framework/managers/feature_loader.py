@@ -213,12 +213,34 @@ class FeatureImporter:
     # ------------------------------------------------------------------
 
     def _try_import(self, base: str, sub: str) -> None:
+        """Import one conventional submodule, if the feature has it.
+
+        ModuleNotFoundError means two different things here and only one of
+        them is harmless. "This feature has no routes.py" is normal and is
+        why the error is caught at all. "routes.py is right there and imports
+        a package nobody installed" is a broken feature, and treating it as
+        the first left the feature silently serving nothing: the blueprint
+        registered, its asset route worked, and every page it should have
+        answered was a 404 with not one line in the log. That cost an
+        afternoon twice.
+
+        The two are told apart by which module went missing. Python records
+        it on the exception, so the only case ignored is the one where the
+        submodule itself is what could not be found.
+        """
+        name = f"{base}.{sub}"
         try:
-            importlib.import_module(f"{base}.{sub}")
-        except ModuleNotFoundError:
-            pass
+            importlib.import_module(name)
+        except ModuleNotFoundError as e:
+            if e.name == name:
+                return
+            raise FeatureError(
+                f"Cannot import {name}: it needs {e.name}, which is not "
+                f"installed. Declare it in the feature's dependencies and "
+                f"reinstall the feature."
+            ) from e
         except Exception as e:
-            raise FeatureError(f"Cannot import {base}.{sub}: {e}") from e
+            raise FeatureError(f"Cannot import {name}: {e}") from e
 
 
 # ---------------------------------------------------------------------------
