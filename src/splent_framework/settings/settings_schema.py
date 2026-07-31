@@ -130,6 +130,12 @@ def _cast(field: dict, raw):
             return raw
         return default if default else "#000000"
     # text / select
+    if isinstance(raw, (list, tuple)):
+        # A feature's config.py has often already split a comma separated
+        # variable by the time this reads app.config. The panel edits it as
+        # one line, so it is put back together rather than rendered as a
+        # Python list into a form field.
+        raw = ",".join(str(item) for item in raw)
     return raw if raw not in (None, "") else (default if default is not None else "")
 
 

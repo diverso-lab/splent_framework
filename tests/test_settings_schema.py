@@ -172,3 +172,27 @@ class TestWithoutTheSettingsFeature:
 
         with app.app_context():
             assert get_config("search")["placeholder"] == "Search this site"
+
+
+class TestAListEditedAsOneLine:
+    def test_it_arrives_joined_rather_than_as_a_python_list(self, app, stored):
+        """config.py has often already split a comma separated variable by
+        the time this reads app.config, and a form field rendering
+        ['Teoría', 'Prácticas'] is not something anybody can edit."""
+        register_settings(
+            "courses",
+            "Courses",
+            [
+                {
+                    "key": "sections",
+                    "env": "COURSES_SECTIONS",
+                    "type": "text",
+                    "default": "",
+                }
+            ],
+        )
+        stored({})
+        app.config["COURSES_SECTIONS"] = ["Teoría", "Prácticas"]
+
+        with app.app_context():
+            assert get_config("courses")["sections"] == "Teoría,Prácticas"
