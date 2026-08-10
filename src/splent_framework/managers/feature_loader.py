@@ -134,12 +134,23 @@ class FeatureLinkResolver:
             glob.glob(os.path.join(features_dir, ref.org_safe, f"{ref.name}@*"))
         )
         if candidates:
-            logger.warning(
+            chosen = candidates[0]
+            # In a built image the feature links point at a cache that never
+            # ships, so the entry glob finds is the very version the pin asked
+            # for, just unresolvable as a path. That is layout, not drift.
+            # Only a genuinely different version deserves the operator's
+            # attention.
+            log = (
+                logger.debug
+                if os.path.basename(chosen) == os.path.basename(expected)
+                else logger.warning
+            )
+            log(
                 "Using available version for %s: %s",
                 ref.name,
-                os.path.basename(candidates[0]),
+                os.path.basename(chosen),
             )
-            return candidates[0]
+            return chosen
         raise FeatureError(f"Feature link not found: {expected}")
 
 

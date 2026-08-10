@@ -340,7 +340,13 @@ class FeatureManager:
             )
             if os.path.isfile(catalog_uvl):
                 return catalog_uvl
-            logger.warning(
+            # Runtime survives without the model: the order resolver falls
+            # back to pyproject order, which a pinned product already ships
+            # correct. A deployed image has no catalog at all, so at warning
+            # level this would nag on every command. The commands that truly
+            # need the model (validate, configure, spl:*) report their own
+            # error when it is missing.
+            logger.debug(
                 "UVL not found for SPL '%s'. Run: splent spl:fetch %s",
                 spl_name,
                 spl_name,
