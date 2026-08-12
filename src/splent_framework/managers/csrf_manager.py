@@ -48,6 +48,11 @@ class CSRFManager:
             app.config["SESSION_COOKIE_HTTPONLY"] = True
 
         if not app.config.get("WTF_CSRF_ENABLED", True):
+            # Templates still call csrf_token() in their forms; without the
+            # extension the global does not exist and every form page would
+            # crash under the testing configuration. An empty token keeps
+            # them rendering while the check itself stays off.
+            app.jinja_env.globals.setdefault("csrf_token", lambda: "")
             logger.debug("CSRF protection is off for this configuration")
             return
 
