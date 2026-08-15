@@ -82,8 +82,13 @@ class ProductionConfig(Config):
 
     def __init__(self):
         super().__init__()
-        if not os.getenv("SECRET_KEY"):
+        secret_key = os.getenv("SECRET_KEY")
+        if not secret_key:
             raise RuntimeError(
                 "SECRET_KEY environment variable must be set in production."
             )
+        # Read here rather than inherited from the class attribute, which was
+        # evaluated when the module was first imported, possibly before the
+        # environment that carries the real key was loaded.
+        self.SECRET_KEY = secret_key
         self.SQLALCHEMY_DATABASE_URI = _build_db_uri("MARIADB_DATABASE", "default_db")

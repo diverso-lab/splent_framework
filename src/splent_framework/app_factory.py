@@ -5,8 +5,12 @@ Usage in a product's __init__.py::
 
     from splent_framework import create_splent_app
 
-    def create_app(config_name="development"):
+    def create_app(config_name=None):
         return create_splent_app(__name__, config_name)
+
+``config_name`` may be left out: the profile then follows SPLENT_ENV
+(``prod`` loads ProductionConfig, ``test`` TestingConfig, anything else
+DevelopmentConfig). Pass a name only to force one, as the tests do.
 
 The factory initialises all framework subsystems in the correct order.
 Products should not import individual managers — the factory handles it.
@@ -37,9 +41,7 @@ _PIPELINE = [
     ("namespaces", lambda app, **kw: NamespaceManager.init_app(app)),
     (
         "config",
-        lambda app, **kw: ConfigManager.init_app(
-            app, kw.get("config_name", "development")
-        ),
+        lambda app, **kw: ConfigManager.init_app(app, kw.get("config_name")),
     ),
     # Straight after config, because everything that reads a client address
     # (rate limits, audit trails, logs) has to see the same answer, and the
@@ -69,7 +71,7 @@ _PIPELINE = [
 
 def create_splent_app(
     import_name: str,
-    config_name: str = "development",
+    config_name: str | None = None,
     *,
     strict: bool = False,
     extra_context: dict | None = None,
@@ -80,8 +82,10 @@ def create_splent_app(
     ----------
     import_name : str
         The ``__name__`` of the calling product package.
-    config_name : str
-        Configuration profile: ``"development"``, ``"testing"``, or ``"production"``.
+    config_name : str | None
+        Configuration profile: ``"development"``, ``"testing"``, or
+        ``"production"``. None follows SPLENT_ENV (see
+        ``managers.config_manager.resolve_config_name``).
     strict : bool
         If True, missing features raise errors instead of warnings.
     extra_context : dict | None
