@@ -57,10 +57,37 @@ def get_assets(kind: str) -> list:
             href = url_for(a["endpoint"], **a["params"])
         except Exception:
             continue
+        # Cache-bust by the asset file's modification time: the asset route
+        # serves without a version in the path, so a browser would keep an old
+        # CSS/JS after a feature changes it. Appending ?v=<mtime> makes the URL
+        # change with the file, so an edited stylesheet is refetched on the
+        # next load instead of a stale one lingering.
+        version = _asset_version(a["endpoint"], a["params"])
+        if version is not None:
+            href = f"{href}?v={version}"
         if href not in seen:
             seen.add(href)
             out.append(href)
     return out
+
+
+def _asset_version(endpoint, params):
+    """Modification time of the asset file behind a route, or None. Resolved
+    through the blueprint that owns the route, the same way the asset route
+    itself finds the file."""
+    import os
+
+    try:
+        from flask import current_app
+
+        bp = current_app.blueprints.get(endpoint.split(".")[0])
+        resolver = getattr(bp, "_resolve_asset_path", None)
+        if resolver is None:
+            return None
+        path, _base = resolver(params.get("subfolder"), params.get("filename"))
+        return int(os.path.getmtime(path)) if path else None
+    except Exception:
+        return None
 
 
 def clear_assets() -> None:
