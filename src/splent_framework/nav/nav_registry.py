@@ -17,7 +17,7 @@ _nav_items: dict = {}
 
 
 def register_nav_item(
-    key: str, label: str, href: str, order: int = 100, icon=None
+    key: str, label: str, href: str, order: int = 100, icon=None, children=None
 ) -> None:
     """Declare one entry in the public main navigation (opt-in, per feature).
 
@@ -28,6 +28,12 @@ def register_nav_item(
         href: public URL/path the entry points to (e.g. "/projects").
         order: lower sorts first when no runtime override exists.
         icon: optional feather icon name.
+        children: optional sub-entries rendered as a dropdown under the
+            entry: a list of ``{"label", "href"}`` dicts, or a zero-argument
+            callable returning that list. A callable is resolved on every
+            render, which is how an entry lists content that changes at
+            runtime (the editions of an event, the categories of a blog)
+            without re-registering. Empty means a plain link.
     """
     _nav_items[key] = {
         "key": key,
@@ -35,7 +41,32 @@ def register_nav_item(
         "href": href,
         "order": order,
         "icon": icon,
+        "children": children,
     }
+
+
+def resolve_children(item: dict) -> list:
+    """The rendered sub-entries of a nav item: ``[{"label", "href"}, …]``.
+
+    Resolves a callable ``children`` at call time and never raises: a
+    feature whose lookup fails (no database yet, a table missing) renders a
+    plain link rather than breaking every page's header.
+    """
+    children = item.get("children")
+    if callable(children):
+        try:
+            children = children()
+        except Exception:
+            children = []
+    out = []
+    for child in children or []:
+        if not isinstance(child, dict):
+            continue
+        label = child.get("label")
+        href = child.get("href")
+        if label and href:
+            out.append({"label": label, "href": href, "current": bool(child.get("current"))})
+    return out
 
 
 def get_nav_items() -> list:

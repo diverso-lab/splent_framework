@@ -96,20 +96,20 @@ def validate_refinements(
                 claimed[key] = refiner
 
         # 5. Model extensions
+        #
+        # Unlike overrides (a service/template/hook has one winner), model
+        # extensions are ADDITIVE: several features may each add their own
+        # columns to the same base model (editions adds Event.edition_id,
+        # edition_staff adds Event.created_by), exactly as several WordPress
+        # plugins extend one post type. The model extender skips a column that
+        # already exists, so distinct mixins never collide; only extending a
+        # model the base did not declare extensible is an error.
         for model in config.extends_models:
-            key = (base, "model", model.target)
             if model.target not in ext.models:
                 errors.append(
                     f"{refiner}: extends model '{model.target}' from {base}, "
                     f"but {base} does not declare it as extensible."
                 )
-            elif key in claimed:
-                errors.append(
-                    f"{refiner}: extends model '{model.target}' from {base}, "
-                    f"but it is already extended by {claimed[key]}."
-                )
-            else:
-                claimed[key] = refiner
 
         # 6. Route additions
         for route in config.adds_routes:

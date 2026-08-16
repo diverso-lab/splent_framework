@@ -38,6 +38,26 @@ def get_template_hooks(name: str) -> list:
     return [f for _, f in sorted(_hooks.get(name, []), key=lambda pair: pair[0])]
 
 
+def render_template_hooks(name: str):
+    """Call every callback of a slot and join what they return.
+
+    Returns Markup so it drops straight into an autoescaped template. An
+    empty string means nobody rendered anything for the slot, whether no
+    feature registered or every registered feature declined (a hook that
+    returns "" or None on pages it does not apply to). Templates use that
+    emptiness to keep a built-in fallback: ``{% set hero =
+    render_template_hooks("home.hero") %}{% if hero %}{{ hero }}{% else %}…``.
+    """
+    from markupsafe import Markup
+
+    parts = []
+    for func in get_template_hooks(name):
+        out = func()
+        if out:
+            parts.append(str(out))
+    return Markup("".join(parts))
+
+
 def clear_hooks() -> None:
     """Remove all registered hooks. Intended for use in test teardown."""
     _hooks.clear()
